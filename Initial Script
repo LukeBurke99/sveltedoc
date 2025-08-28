@@ -66,7 +66,7 @@ import { performance } from 'node:perf_hooks';
 
 		On-save integration (VS Code)
 		- Recommended: use a "run on save" tool/extension to execute: pnpm docs:sync ${file}
-		- Scope the match to your components folder (e.g., src/components/**\/*.svelte) so only component saves trigger it.
+		- Scope the match to your components folder (e.g., `** /components/**`) so only component saves trigger it.
 		- This script prints a concise timing line, e.g., "[docs:sync] src/components/Core/Alert.svelte in 42.5ms".
 
 	Edge cases and limitations

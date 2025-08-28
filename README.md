@@ -27,7 +27,7 @@ Settings live under the `sveltedoc` namespace.
 - sveltedoc.documentOnSave (boolean, default: true)
 	- Run documentation generation whenever a matching `.svelte` file is saved.
 
-- sveltedoc.filesToDocument (string[], default: ["src/components/*"])
+- sveltedoc.filesToDocument (string[], default: ["**/components/**"])
 	- Glob-like patterns for files/folders where docs should run. Only `.svelte` files are processed.
 
 - sveltedoc.propertyNameMatch (string[], default: ["*Props"])
@@ -38,6 +38,38 @@ Settings live under the `sveltedoc` namespace.
 
 - sveltedoc.placeTitleBeforeProps (boolean, default: true)
 	- Whether to place the title/description before the props section.
+
+## File matching guide (filesToDocument)
+
+The extension runs on save only for files whose path matches your `sveltedoc.filesToDocument` patterns.
+
+- Default: `["**/components/**"]`
+- Only `.svelte` files are processed (the pattern filters by path, the extension then ensures the file is a Svelte file).
+- Works across nested folders and monorepos. On Windows paths are normalized so forward-slash globs work.
+
+Examples that match:
+
+- `src/lib/components/MainView.svelte`
+- `src/lib/components/Some/Other/Folders/Other.svelte`
+- `src/Apps/MobileApp/src/lib/components/some other folder/component.svelte`
+- `src/components/A.svelte`
+- `src/components/Folder/B.svelte`
+
+Examples that do not match:
+
+- `src/routes/+page.svelte`
+- `src/lib/RandomSvelteFile.svelte`
+
+Tip: You can add more patterns if you keep components in different places, e.g.
+
+```json
+{
+	"sveltedoc.filesToDocument": [
+		"**/components/**",
+		"packages/ui/src/**"
+	]
+}
+```
 
 ## Output channel
 

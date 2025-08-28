@@ -72,7 +72,7 @@
 						"type": "string"
 					},
 					"default": [
-						"src/components/*"
+						"**/components/**"
 					],
 					"description": "Glob-like patterns of files/folders where documentation generation should run. Only .svelte files are considered."
 				},

@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext): void {
 		const onSave = cfg.get<boolean>('documentOnSave', true);
 		if (!onSave) return;
 		if (doc.languageId !== 'svelte') return;
-		const patterns = cfg.get<string[]>('filesToDocument', ['src/components/*']);
+		const patterns = cfg.get<string[]>('filesToDocument', ['**/components/**']);
 		if (!fileMatches(doc.uri, patterns)) {
 			logToChannel('(skipping, file pattern does not match)', doc.fileName);
 			return;
@@ -114,7 +114,7 @@ async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promis
 
 function fileMatches(uri: vscode.Uri, patterns: string[]): boolean {
 	// Cheap glob: only supports trailing ** and * within path segments
-	const rel = vscode.workspace.asRelativePath(uri);
+	const rel = vscode.workspace.asRelativePath(uri).replace(/\\/g, '/');
 	return patterns.some((p) => new RegExp('^' + globToRegex(p) + '$').test(rel));
 }
 
