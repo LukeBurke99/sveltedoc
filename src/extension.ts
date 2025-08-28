@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { processSvelteDoc } from './generator';
+import { fileMatchesPath } from './match';
 import type { ProcessOptions } from './types';
 
 let channel: vscode.OutputChannel | undefined;
@@ -113,17 +114,8 @@ async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promis
 }
 
 function fileMatches(uri: vscode.Uri, patterns: string[]): boolean {
-	// Cheap glob: only supports trailing ** and * within path segments
 	const rel = vscode.workspace.asRelativePath(uri).replace(/\\/g, '/');
-	return patterns.some((p) => new RegExp('^' + globToRegex(p) + '$').test(rel));
+	return fileMatchesPath(rel, patterns);
 }
 
-function globToRegex(glob: string): string {
-	// Escape regex special chars except * and /
-	const ESCAPE_RE = /[.+^${}()|[\]\\]/g;
-	let s = glob.replace(ESCAPE_RE, (ch) => `\\${ch}`);
-	// Convert ** to .*, then remaining * to [^/]*
-	s = s.replace(/\*\*/g, '.*');
-	s = s.replace(/\*/g, '[^/]*');
-	return s;
-}
+// globToRegex moved to ./match for reuse in tests
