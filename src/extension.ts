@@ -4,6 +4,22 @@ import type { ProcessOptions } from './types';
 
 let channel: vscode.OutputChannel | undefined;
 
+function logToChannel(message: string, docName?: string): void {
+	// Ensure the channel exists, then write a prefixed line, optionally scoped to a document
+	channel ??= vscode.window.createOutputChannel('SvelteDoc');
+	const scope = docName ? `[${docName}] ` : '';
+	// Timestamp in HH:mm:ss.SS (centiseconds)
+	const now = new Date();
+	const pad2 = (n: number): string => String(n).padStart(2, '0');
+	const hh = pad2(now.getHours());
+	const mm = pad2(now.getMinutes());
+	const ss = pad2(now.getSeconds());
+	const cs = pad2(Math.floor(now.getMilliseconds() / 10));
+	const ts = `${hh}:${mm}:${ss}.${cs}`;
+
+	channel.appendLine(`[SvelteDoc ${ts}] ${scope}${message}`);
+}
+
 export function activate(context: vscode.ExtensionContext): void {
 	channel = vscode.window.createOutputChannel('SvelteDoc');
 	context.subscriptions.push(channel);
@@ -26,7 +42,10 @@ export function activate(context: vscode.ExtensionContext): void {
 		if (!onSave) return;
 		if (doc.languageId !== 'svelte') return;
 		const patterns = cfg.get<string[]>('filesToDocument', ['src/components/*']);
-		if (!fileMatches(doc.uri, patterns)) return;
+		if (!fileMatches(doc.uri, patterns)) {
+			logToChannel('(skipping, file pattern does not match)', doc.fileName);
+			return;
+		}
 
 		const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
 		const addTitleAndDescription = cfg.get<boolean>('addTitleAndDescription', true);
@@ -41,12 +60,12 @@ export function activate(context: vscode.ExtensionContext): void {
 		const start = Date.now();
 		const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
 			processSvelteDoc(doc.getText(), doc.fileName, options);
-		channel?.appendLine(
-			`[sveltedoc] ${doc.fileName} ${changed ? '(updated)' : '(no change)'} in ${String(
-				Date.now() - start
-			)}ms`
+
+		logToChannel(
+			`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,
+			doc.fileName
 		);
-		for (const line of log) channel?.appendLine(`[sveltedoc] ${line}`);
+		for (const line of log) logToChannel(line, doc.fileName);
 
 		if (!changed) return;
 		const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
@@ -75,12 +94,12 @@ async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promis
 	const start = Date.now();
 	const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
 		processSvelteDoc(doc.getText(), doc.fileName, options);
-	channel.appendLine(
-		`[sveltedoc] ${doc.fileName} ${changed ? '(updated)' : '(no change)'} in ${String(
-			Date.now() - start
-		)}ms`
+
+	logToChannel(
+		`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,
+		doc.fileName
 	);
-	for (const line of log) channel.appendLine(`[sveltedoc] ${line}`);
+	for (const line of log) logToChannel(line, doc.fileName);
 
 	if (changed) {
 		const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
