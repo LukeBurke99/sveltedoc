@@ -1,51 +1,21 @@
 import path from 'node:path';
-
-export type PropDoc = {
-	name: string;
-	typeText: string;
-	optional: boolean;
-	defaultText?: string;
-	bindable: boolean;
-	description?: string;
-};
-
-export type ExtractResult = {
-	inferredTypeName?: string;
-	props: PropDoc[];
-	inherits: string[];
-	hasRest: boolean;
-	debug: string[];
-};
-
-export type BuildOptions = {
-	addTitleAndDescription: boolean;
-	placeTitleBeforeProps: boolean;
-	filePath: string;
-	existingDescription: string;
-	inherits: string[];
-	props: PropDoc[];
-	preservedTail?: string; // content after --- within existing @component block, if any
-};
+import {
+	escapeRegExp,
+	scanToTopLevelSemicolon,
+	splitOnce,
+	splitTopLevel,
+	wildcardToRegex
+} from './core';
+import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './types';
 
 const START_MARK = '<!-- @component';
 
-export type ProcessOptions = {
-	// Wildcard patterns for inferring props type alias when not destructured with $props(): string like "*Props"
-	propertyNameMatch: string[];
-	// Whether to include title/description and their placement
-	addTitleAndDescription: boolean;
-	placeTitleBeforeProps: boolean;
-};
-
+/** Process a Svelte component document and produce an updated version with a fresh @component block. */
 export function processSvelteDoc(
 	source: string,
 	filePath: string,
 	options: ProcessOptions
-): {
-	updated: string;
-	changed: boolean;
-	log: string[];
-} {
+): { updated: string; changed: boolean; log: string[] } {
 	const log: string[] = [];
 	const {
 		scripts,
@@ -95,6 +65,7 @@ export function processSvelteDoc(
 	return { updated, changed, log };
 }
 
+/** Extracts TS <script> contents and an existing leading @component comment if present. */
 function extractScriptsAndLeadingComment(source: string): {
 	scripts: string[];
 	leadingComment?: { raw: string; description: string };
@@ -120,6 +91,7 @@ function extractScriptsAndLeadingComment(source: string): {
 	return { scripts, leadingComment, preservedTail };
 }
 
+/** Parse concatenated TS code to extract props and inherits. */
 function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 	const result: ExtractResult = {
 		inferredTypeName: undefined,
@@ -230,6 +202,7 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 	return result;
 }
 
+/** Locate the RHS for a named type alias, allowing optional generics. */
 function findTypeAliasBlock(tsCode: string, typeName: string): string | undefined {
 	let re = new RegExp(
 		String.raw`\bexport\s+type\s+${escapeRegExp(typeName)}\b\s*(?:<[^>]*?>)?\s*=`,
@@ -247,89 +220,7 @@ function findTypeAliasBlock(tsCode: string, typeName: string): string | undefine
 	return tsCode.slice(start, end).trim();
 }
 
-function scanToTopLevelSemicolon(code: string, startIndex: number): number {
-	let depthParens = 0;
-	let depthBraces = 0;
-	let depthBrackets = 0;
-	let depthAngles = 0;
-	let inString: '"' | "'" | '`' | null = null;
-	let inLineComment = false;
-	let inBlockComment = false;
-	for (let i = startIndex; i < code.length; i++) {
-		const ch = code[i];
-		const next = i + 1 < code.length ? code[i + 1] : '';
-		const prev = i > 0 ? code[i - 1] : '';
-
-		if (inLineComment) {
-			if (ch === '\n') inLineComment = false;
-			continue;
-		}
-		if (inBlockComment) {
-			if (ch === '*' && next === '/') {
-				inBlockComment = false;
-				i++;
-			}
-			continue;
-		}
-		if (!inString && ch === '/' && next === '/') {
-			inLineComment = true;
-			i++;
-			continue;
-		}
-		if (!inString && ch === '/' && next === '*') {
-			inBlockComment = true;
-			i++;
-			continue;
-		}
-		if (inString) {
-			if (ch === inString && prev !== '\\') inString = null;
-			continue;
-		}
-		if (isQuote(ch)) {
-			inString = ch;
-			continue;
-		}
-		switch (ch) {
-			case '(':
-				depthParens++;
-				break;
-			case ')':
-				depthParens = Math.max(0, depthParens - 1);
-				break;
-			case '{':
-				depthBraces++;
-				break;
-			case '}':
-				depthBraces = Math.max(0, depthBraces - 1);
-				break;
-			case '[':
-				depthBrackets++;
-				break;
-			case ']':
-				depthBrackets = Math.max(0, depthBrackets - 1);
-				break;
-			case '<':
-				depthAngles++;
-				break;
-			case '>':
-				depthAngles = Math.max(0, depthAngles - 1);
-				break;
-			case ';':
-				if (
-					depthParens === 0 &&
-					depthBraces === 0 &&
-					depthBrackets === 0 &&
-					depthAngles === 0
-				)
-					return i;
-				break;
-			default:
-				break;
-		}
-	}
-	return -1;
-}
-
+/** Parse property signatures from an object type literal's members text. */
 function parseTypeMembers(
 	membersText: string
 ): { name: string; typeText: string; optional: boolean; description?: string }[] {
@@ -348,6 +239,7 @@ function parseTypeMembers(
 	return members;
 }
 
+/** Reduce a JSDoc block to a single-line summary. */
 function extractJsDocSummary(jsdoc: string): string | undefined {
 	const inner = jsdoc.replace(/^\s*\/\*\*\s*/, '').replace(/\s*\*\/\s*$/, '');
 	const lines = inner
@@ -361,94 +253,22 @@ function splitIntersection(typeRhs: string): string[] {
 	return splitTopLevel(typeRhs, '&');
 }
 
-function splitTopLevel(input: string, sep: ',' | '&'): string[] {
-	const parts: string[] = [];
-	let depthParens = 0;
-	let depthBraces = 0;
-	let depthBrackets = 0;
-	let depthAngles = 0;
-	let current = '';
-	let inString: '"' | "'" | '`' | null = null;
-	for (let i = 0; i < input.length; i++) {
-		const ch = input[i];
-		const prev = i > 0 ? input[i - 1] : '';
-		if (inString) {
-			current += ch;
-			if (ch === inString && prev !== '\\') inString = null;
-			continue;
-		}
-		if (isQuote(ch)) {
-			inString = ch;
-			current += ch;
-			continue;
-		}
-		switch (ch) {
-			case '(':
-				depthParens++;
-				break;
-			case ')':
-				depthParens = Math.max(0, depthParens - 1);
-				break;
-			case '{':
-				depthBraces++;
-				break;
-			case '}':
-				depthBraces = Math.max(0, depthBraces - 1);
-				break;
-			case '[':
-				depthBrackets++;
-				break;
-			case ']':
-				depthBrackets = Math.max(0, depthBrackets - 1);
-				break;
-			case '<':
-				depthAngles++;
-				break;
-			case '>':
-				depthAngles = Math.max(0, depthAngles - 1);
-				break;
-			default:
-				break;
-		}
-		if (
-			depthParens === 0 &&
-			depthBraces === 0 &&
-			depthBrackets === 0 &&
-			depthAngles === 0 &&
-			ch === sep
-		) {
-			parts.push(current);
-			current = '';
-			continue;
-		}
-		current += ch;
-	}
-	if (current.trim()) parts.push(current);
-	return parts;
-}
-
-function splitOnce(text: string, delimiter: string): [string, string | undefined] {
-	const idx = text.indexOf(delimiter);
-	if (idx === -1) return [text, undefined];
-	return [text.slice(0, idx), text.slice(idx + delimiter.length)];
-}
-
-function escapeRegExp(s: string): string {
-	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
+/** Collapse whitespace in inline sections (bullets). */
 function sanitizeInline(text: string): string {
 	return text.replace(/\s+/g, ' ').trim();
 }
 
+/** Escape angle brackets in plain text (not code spans). */
 function escapeAngle(text: string): string {
 	return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Wrap text using code or bold markers. */
 function wrapCode(text: string, char: string = '`'): string {
 	return char + text + char;
 }
 
+/** Normalize a default value for display, unwrapping $bindable(inner) and simple strings. */
 function normalizeDefaultForDisplay(defaultText: string | undefined): string | undefined {
 	if (!defaultText) return undefined;
 	const trimmed = defaultText.trim().replace(/;$/, '');
@@ -458,10 +278,12 @@ function normalizeDefaultForDisplay(defaultText: string | undefined): string | u
 	return str ? str[1] : core;
 }
 
+/** Remove (required) hints from inline descriptions to avoid duplication. */
 function stripRequiredHint(text: string): string {
 	return text.replace(/\(\s*required\s*\)/gi, '').trim();
 }
 
+/** Render the @component block according to settings and extracted data. */
 function buildComment(input: BuildOptions): string {
 	const fileName = path.basename(input.filePath);
 	const title = fileName.replace(/\.svelte$/i, '');
@@ -511,14 +333,8 @@ function buildComment(input: BuildOptions): string {
 		lines.push(...titleBlock);
 	}
 
-	// If no props and title disabled, avoid emitting empty comment
-	if (!hasAnyProps && !input.addTitleAndDescription) {
-		// But processSvelteDoc prevents reaching here by early return.
-	}
-
 	// Append preserved tail, if any, after a --- delimiter
 	if (input.preservedTail && input.preservedTail.trim().length > 0) {
-		// Ensure a blank line before tail for readability
 		if (lines[lines.length - 1] !== '---') lines.push('---');
 		lines.push(input.preservedTail.trim());
 	}
@@ -527,19 +343,26 @@ function buildComment(input: BuildOptions): string {
 	return lines.join('\n');
 }
 
+/** Insert the new @component block, replacing any previous one and placing it before the first TS script. */
 function insertOrUpdateComment(source: string, newComment: string): string {
+	const headerRe = /<!--\s*@component[\s\S]*?-->/i;
 	const scriptOpen = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i;
-	const firstScriptIdx = source.search(scriptOpen);
 	const lm = /^(\uFEFF)?\s*/.exec(source);
 	const leadingWs = lm ? lm[0] : '';
+
+	// Remove any existing @component header
+	const body = source.replace(headerRe, '').trimStart();
+
+	const firstScriptIdx = body.search(scriptOpen);
 	if (firstScriptIdx !== -1) {
-		const after = source.slice(firstScriptIdx);
-		return `${leadingWs}${newComment}\n${after}`;
+		const before = body.slice(0, firstScriptIdx);
+		const after = body.slice(firstScriptIdx);
+		return `${leadingWs}${before}${newComment}\n${after}`;
 	}
-	const rest = source.slice(leadingWs.length);
-	return `${leadingWs}${newComment}\n${rest}`;
+	return `${leadingWs}${newComment}\n${body}`;
 }
 
+/** Extract preserved description between ## Title and ### Props (or ---). */
 function extractDescriptionFromComment(raw: string): string {
 	let idx = raw.indexOf('\n## ');
 	if (idx === -1) idx = raw.indexOf('## ');
@@ -554,21 +377,12 @@ function extractDescriptionFromComment(raw: string): string {
 	return cleaned.trim();
 }
 
+/** Extract any preserved tail content following a --- line inside the comment. */
 function extractTailAfterDashLine(raw: string): string | undefined {
 	const idx = raw.indexOf('\n---');
 	if (idx === -1) return undefined;
-	const after = raw.slice(idx + 4); // skip leading newline before '---' or same line
+	const after = raw.slice(idx + 4);
 	const closeIdx = after.lastIndexOf('-->');
 	const core = closeIdx === -1 ? after : after.slice(0, closeIdx);
 	return core.replace(/^\s+|\s+$/g, '');
-}
-
-function wildcardToRegex(pattern: string): RegExp {
-	// Convert simple wildcard * to a regex; escape other characters
-	const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-	return new RegExp(`^${escaped}$`);
-}
-
-function isQuote(ch: string): ch is '"' | "'" | '`' {
-	return ch === '"' || ch === "'" || ch === '`';
 }

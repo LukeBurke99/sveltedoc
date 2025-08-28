@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { type ProcessOptions, processSvelteDoc } from './generator';
+import { processSvelteDoc } from './generator';
+import type { ProcessOptions } from './types';
 
 let channel: vscode.OutputChannel | undefined;
 
@@ -18,14 +19,38 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(registerCommand);
 
 	// On-save hook
-	const saveSub = vscode.workspace.onWillSaveTextDocument(async (e) => {
-		const cfg = vscode.workspace.getConfiguration('sveltedoc', e.document.uri);
+	const saveSub = vscode.workspace.onWillSaveTextDocument((e) => {
+		const doc = e.document;
+		const cfg = vscode.workspace.getConfiguration('sveltedoc', doc.uri);
 		const onSave = cfg.get<boolean>('documentOnSave', true);
 		if (!onSave) return;
-		if (e.document.languageId !== 'svelte') return;
+		if (doc.languageId !== 'svelte') return;
 		const patterns = cfg.get<string[]>('filesToDocument', ['src/components/*']);
-		if (!fileMatches(e.document.uri, patterns)) return;
-		await documentFile(e.document, false);
+		if (!fileMatches(doc.uri, patterns)) return;
+
+		const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
+		const addTitleAndDescription = cfg.get<boolean>('addTitleAndDescription', true);
+		const placeTitleBeforeProps = cfg.get<boolean>('placeTitleBeforeProps', true);
+
+		const options: ProcessOptions = {
+			propertyNameMatch,
+			addTitleAndDescription,
+			placeTitleBeforeProps
+		};
+
+		const start = Date.now();
+		const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
+			processSvelteDoc(doc.getText(), doc.fileName, options);
+		channel?.appendLine(
+			`[sveltedoc] ${doc.fileName} ${changed ? '(updated)' : '(no change)'} in ${String(
+				Date.now() - start
+			)}ms`
+		);
+		for (const line of log) channel?.appendLine(`[sveltedoc] ${line}`);
+
+		if (!changed) return;
+		const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
+		e.waitUntil(Promise.resolve([vscode.TextEdit.replace(fullRange, updated)]));
 	});
 	context.subscriptions.push(saveSub);
 }
