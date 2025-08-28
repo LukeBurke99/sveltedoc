@@ -1,90 +1,134 @@
 {
-    "name": "sveltedoc",
-    "publisher": "burke-development",
-    "displayName": "SvelteDoc",
-    "description": "Automatically generate and maintain documentation for your Svelte components, right inside VS Code.",
-    "version": "1.0.0",
-    "icon": "images/logo/512.png",
-    "galleryBanner": {
-        "theme": "dark",
-        "color": "#FF3E00"
-    },
-    "categories": [
-        "Formatters",
-        "Notebooks",
-        "Other"
-    ],
-    "keywords": [
-        "svelte",
-        "documentation",
-        "autodoc",
-        "component docs",
-        "jsdoc",
-        "typescript",
-        "code comments",
-        "api docs",
-        "vscode extension",
-        "svelte components",
-        "doc generator",
-        "auto documentation",
-        "developer tools",
-        "productivity",
-        "code helper"
-    ],
-    "license": "SEE LICENSE IN LICENSE",
-    "homepage": "https://github.com/LukeBurke99/sveltedoc/blob/master/README.md",
-    "bugs": {
-        "url": "https://github.com/LukeBurke99/sveltedoc/issues"
-    },
-    "sponsor": {
-        "url": "https://buymeacoffee.com/lukeburke"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/LukeBurke99/sveltedoc"
-    },
-    "engines": {
-        "vscode": "^1.103.0"
-    },
-    "activationEvents": [],
-    "main": "./out/extension.js",
-    "contributes": {
-        "commands": [
-            {
-                "command": "sveltedoc.helloWorld",
-                "title": "Hello World"
-            }
-        ]
-    },
-    "scripts": {
-        "vscode:prepublish": "pnpm run compile",
-        "publish": "vsce publish",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./",
-        "pretest": "pnpm run compile && pnpm run lint",
-        "lint": "eslint src",
-        "test": "vscode-test",
-        "prerelease": "node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
-        "release": "pnpm run compile && vsce package -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
-    },
-    "devDependencies": {
-        "@eslint/compat": "^1.3.2",
-        "@eslint/js": "^9.34.0",
-        "@types/mocha": "^10.0.10",
-        "@types/node": "22.x",
-        "@types/vscode": "^1.103.0",
-        "@typescript-eslint/eslint-plugin": "^8.39.0",
-        "@typescript-eslint/parser": "^8.39.0",
-        "@vscode/test-cli": "^0.0.11",
-        "@vscode/test-electron": "^2.5.2",
-        "@vscode/vsce": "^3.6.0",
-        "eslint": "^9.32.0",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-unicorn": "^60.0.0",
-        "globals": "^16.3.0",
-        "prettier": "^3.6.2",
-        "typescript": "^5.9.2",
-        "typescript-eslint": "^8.41.0"
-    },
-    "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+	"name": "sveltedoc",
+	"publisher": "burke-development",
+	"displayName": "SvelteDoc",
+	"description": "Automatically generate and maintain documentation for your Svelte components, right inside VS Code.",
+	"version": "1.0.0",
+	"icon": "images/logo/512.png",
+	"galleryBanner": {
+		"theme": "dark",
+		"color": "#FF3E00"
+	},
+	"categories": [
+		"Formatters",
+		"Notebooks",
+		"Other"
+	],
+	"keywords": [
+		"svelte",
+		"documentation",
+		"autodoc",
+		"component docs",
+		"jsdoc",
+		"typescript",
+		"code comments",
+		"api docs",
+		"vscode extension",
+		"svelte components",
+		"doc generator",
+		"auto documentation",
+		"developer tools",
+		"productivity",
+		"code helper"
+	],
+	"license": "SEE LICENSE IN LICENSE",
+	"homepage": "https://github.com/LukeBurke99/sveltedoc/blob/master/README.md",
+	"bugs": {
+		"url": "https://github.com/LukeBurke99/sveltedoc/issues"
+	},
+	"sponsor": {
+		"url": "https://buymeacoffee.com/lukeburke"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/LukeBurke99/sveltedoc"
+	},
+	"engines": {
+		"vscode": "^1.103.0"
+	},
+	"activationEvents": [
+		"onLanguage:svelte"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "sveltedoc.documentCurrentFile",
+				"title": "SvelteDoc: Document Current File",
+				"enablement": "resourceLangId == svelte"
+			}
+		],
+		"configuration": {
+			"title": "SvelteDoc",
+			"properties": {
+				"sveltedoc.documentOnSave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether to generate documentation for a Svelte component when the file is saved."
+				},
+				"sveltedoc.filesToDocument": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"src/components/*"
+					],
+					"description": "Glob-like patterns of files/folders where documentation generation should run. Only .svelte files are considered."
+				},
+				"sveltedoc.propertyNameMatch": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"*Props"
+					],
+					"description": "Type alias name patterns to use when the $props() destructuring type cannot be inferred. Supports * as a wildcard (e.g., *Props)."
+				},
+				"sveltedoc.addTitleAndDescription": {
+					"type": "boolean",
+					"default": true,
+					"description": "Include the '## ComponentName' and description lines in the @component block."
+				},
+				"sveltedoc.placeTitleBeforeProps": {
+					"type": "boolean",
+					"default": true,
+					"description": "If true, place the title and description before the Props section; otherwise, place them after."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "pnpm run compile",
+		"publish": "vsce publish",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "pnpm run compile && pnpm run lint",
+		"lint": "eslint src",
+		"test": "vscode-test",
+		"prerelease": "node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
+		"release": "pnpm run compile && vsce package -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
+	},
+	"devDependencies": {
+		"@eslint/compat": "^1.3.2",
+		"@eslint/js": "^9.34.0",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "22.x",
+		"@types/vscode": "^1.103.0",
+		"@typescript-eslint/eslint-plugin": "^8.39.0",
+		"@typescript-eslint/parser": "^8.39.0",
+		"@vscode/test-cli": "^0.0.11",
+		"@vscode/test-electron": "^2.5.2",
+		"@vscode/vsce": "^3.6.0",
+		"eslint": "^9.32.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-unicorn": "^60.0.0",
+		"globals": "^16.3.0",
+		"prettier": "^3.6.2",
+		"typescript": "^5.9.2",
+		"typescript-eslint": "^8.41.0"
+	},
+	"dependencies": {},
+	"packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
 }
