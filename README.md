@@ -32,6 +32,7 @@ Settings live under the `sveltedoc` namespace.
 
 - sveltedoc.propertyNameMatch (string[], default: ["*Props"])
 	- Fallback patterns for the props type alias when it can't be inferred from `$props()`.
+	- Works with both `type` and `interface` declarations (e.g., `type ButtonProps = {...}` or `interface ButtonProps { ... }`).
 
 - sveltedoc.addTitleAndDescription (boolean, default: true)
 	- Include `## ComponentName` and the free-form description text in the comment.
@@ -79,7 +80,7 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 
 1. Reads all `<script lang="ts">` blocks in the component.
 2. Detects `$props()` destructuring and captures defaults and `$bindable(...)` usage.
-3. Resolves the type alias and parses object members, optionality, JSDoc summaries, and inherited types.
+3. Resolves the props type as a type alias or interface and parses object members, optionality, JSDoc summaries, and inherited types.
 4. Renders a single `@component` block and inserts it before the first TS `<script>` tag.
 5. Preserves your description and any content after a `---` delimiter inside the comment.
 

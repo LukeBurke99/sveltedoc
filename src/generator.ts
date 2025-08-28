@@ -5,8 +5,8 @@ import {
 	splitOnce,
 	splitTopLevel,
 	wildcardToRegex
-} from './core';
-import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './types';
+} from './core.js';
+import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './types.js';
 
 const START_MARK = '<!-- @component';
 
@@ -17,6 +17,11 @@ export function processSvelteDoc(
 	options: ProcessOptions
 ): { updated: string; changed: boolean; log: string[] } {
 	const log: string[] = [];
+	// Skip if there is no <script> tag at all
+	if (!/<script\b/i.test(source)) {
+		log.push('No <script> tag found — skipping doc block');
+		return { updated: source, changed: false, log };
+	}
 	const {
 		scripts,
 		leadingComment,
@@ -137,10 +142,13 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 	}
 	result.hasRest = hasRest;
 
-	// Resolve type alias block
+	// Resolve type or interface block
 	let typeBlock = typeName ? findTypeAliasBlock(tsCode, typeName) : undefined;
-	if (!typeBlock) {
+	let iface: { membersText: string; extends: string[] } | undefined;
+	if (!typeBlock && typeName) iface = findInterfaceBlock(tsCode, typeName);
+	if (!typeBlock && !iface) {
 		const regexes = patterns.map((p) => wildcardToRegex(p));
+		// Try type aliases by name pattern
 		const typeDeclRe = new RegExp(
 			String.raw`(?:export\s+)?type\s+([A-Za-z_]\w*(?:<[^>]*?>)?)\s*=`,
 			'g'
@@ -156,8 +164,27 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 				break;
 			}
 		}
+		// If no type alias matched, try interface declarations by name pattern
+		if (!typeBlock) {
+			const ifaceDeclRe = new RegExp(
+				String.raw`(?:export\s+)?interface\s+([A-Za-z_]\w*(?:<[^>]*?>)?)\b`,
+				'g'
+			);
+			while (!iface && (m = ifaceDeclRe.exec(tsCode)) !== null) {
+				const fullName = m[1];
+				const baseName = fullName.replace(/<[^>]*>\s*$/, '');
+				if (regexes.some((r) => r.test(baseName))) {
+					iface = findInterfaceBlock(tsCode, baseName);
+					if (iface) {
+						result.inferredTypeName = baseName;
+						result.debug.push(`Using fallback interface: ${baseName}`);
+					}
+				}
+			}
+		}
 	}
-	if (!typeBlock && typeName) result.debug.push(`Type alias not found for: ${typeName}`);
+	if (!typeBlock && !iface && typeName)
+		result.debug.push(`Type/interface not found for: ${typeName}`);
 
 	const props: PropDoc[] = [];
 	const inherits: string[] = [];
@@ -184,6 +211,21 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 				inherits.push(trimmed);
 			}
 		}
+	} else if (iface) {
+		const members = parseTypeMembers(iface.membersText);
+		for (const mem of members) {
+			const defaultText = defaults.get(mem.name);
+			const bindable = bindables.has(mem.name);
+			props.push({
+				name: mem.name,
+				typeText: mem.typeText,
+				optional: mem.optional,
+				defaultText,
+				bindable,
+				description: mem.description
+			});
+		}
+		inherits.push(...iface.extends.map((s) => s.trim()).filter(Boolean));
 	}
 
 	if (props.length === 0 && defaults.size > 0)
@@ -218,6 +260,43 @@ function findTypeAliasBlock(tsCode: string, typeName: string): string | undefine
 	const end = scanToTopLevelSemicolon(tsCode, start);
 	if (end === -1) return undefined;
 	return tsCode.slice(start, end).trim();
+}
+
+/** Find an interface declaration and return its members text and extends list. */
+function findInterfaceBlock(
+	tsCode: string,
+	typeName: string
+): { membersText: string; extends: string[] } | undefined {
+	// Match: export interface Name (<generics>)? (extends A, B)? { ... }
+	const re = new RegExp(
+		String.raw`\b(?:export\s+)?interface\s+${escapeRegExp(typeName)}\b\s*(?:<[^>]*?>)?\s*(?:extends\s+([^\{]+))?\s*\{`,
+		'm'
+	);
+	const m = re.exec(tsCode);
+	if (!m) return undefined;
+	const extendsRaw = m[1];
+	// Find the body block braces starting at the first '{' after the match
+	const openIdx = tsCode.indexOf('{', m.index + m[0].length - 1);
+	if (openIdx === -1) return undefined;
+	let depth = 0;
+	let i = openIdx;
+	for (; i < tsCode.length; i++) {
+		const ch = tsCode[i];
+		if (ch === '{') {
+			depth++;
+		} else if (ch === '}') {
+			depth--;
+			if (depth === 0) break;
+		}
+	}
+	if (i >= tsCode.length) return undefined;
+	const body = tsCode.slice(openIdx + 1, i);
+	const extendsList = extendsRaw
+		? splitTopLevel(extendsRaw, ',')
+				.map((s) => s.trim())
+				.filter(Boolean)
+		: [];
+	return { membersText: body, extends: extendsList };
 }
 
 /** Parse property signatures from an object type literal's members text. */

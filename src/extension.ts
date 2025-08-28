@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { processSvelteDoc } from './generator';
-import { fileMatchesPath } from './match';
-import type { ProcessOptions } from './types';
+import { processSvelteDoc } from './generator.js';
+import { fileMatchesPath } from './match.js';
+import type { ProcessOptions } from './types.js';
 
 let channel: vscode.OutputChannel | undefined;
 

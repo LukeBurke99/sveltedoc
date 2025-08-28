@@ -84,7 +84,7 @@
 					"default": [
 						"*Props"
 					],
-					"description": "Type alias name patterns to use when the $props() destructuring type cannot be inferred. Supports * as a wildcard (e.g., *Props)."
+					"description": "Type/interface name patterns to use when the $props() destructuring type cannot be inferred. Supports * as a wildcard (e.g., *Props)."
 				},
 				"sveltedoc.addTitleAndDescription": {
 					"type": "boolean",
@@ -99,6 +99,7 @@
 			}
 		}
 	},
+	"type": "module",
 	"scripts": {
 		"vscode:prepublish": "pnpm run compile",
 		"publish": "vsce publish",

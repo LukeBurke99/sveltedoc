@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { fileMatchesPath } from './match';
+import { fileMatchesPath } from './match.js';
 
 // Helper to assert match vs not match
 function expectMatch(relPath: string, patterns: string[], expected: boolean): void {
