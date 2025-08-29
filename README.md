@@ -1,10 +1,7 @@
 # SvelteDoc
 
-![Logo](images/logo/128.png)
 
-Generate and maintain component documentation blocks for your Svelte 5 components directly in your source files. The docs appear at the top of the file and show up in hovers when you use the component elsewhere.
-
-> Tip: Add a screenshot of a documented component here.
+> Generate and maintain component documentation blocks for your Svelte 5 components directly in your source files. The docs appear at the top of the file and show up in hovers when you use the component elsewhere.
 
 ## What it does
 
@@ -12,34 +9,52 @@ Generate and maintain component documentation blocks for your Svelte 5 component
 - Finds the props type alias (e.g., `Props`, `ButtonProps`) or falls back to patterns like `*Props`.
 - Builds a single `<!-- @component ... -->` block at the top of the file.
 - Preserves your free-form description text across runs and updates only the generated parts.
-- Supports inherited types via intersections (e.g., `HTMLAttributes<...> & { ... }`).
+- Supports extended/union types via intersections (e.g., `HTMLAttributes<...> & { ... }`).
 
-## Command
 
-- SvelteDoc: Document Current File
-	- Runs on the active editor when it's a `.svelte` file.
+![Example of documented component](images/documentation.png)
+
+> **Suggestions are welcome!** Please create an issue on the GitHub repo and your suggestion will be taken into consideration!
+
+# Index
+* [What it does](#what-it-does)
+* [Commands](#commands)
+* [Settings](#settings)
+* [File matching guide](#file-matching-guide)
+* [Output channel](#output-channel)
+* [How it works](#how-it-works)
+* [Notes](#notes)
+* [Troubleshooting](#troubleshooting)
+* [References](#references)
+* [Release Notes](#release-notes)
+
+## Commands
+
+- `SvelteDoc: Document Current File`
+	- Runs on the active editor when it's a `.svelte` file and will add the component documentation to the top of the file.
 
 ## Settings
 
-Settings live under the `sveltedoc` namespace.
+While SvelteDoc works out of the box and is configured for the most productive settings, there are multiple options under the `sveltedoc` namespace.
 
-- sveltedoc.documentOnSave (boolean, default: true)
+1. `sveltedoc.documentOnSave` (boolean, default: **true**)
 	- Run documentation generation whenever a matching `.svelte` file is saved.
 
-- sveltedoc.filesToDocument (string[], default: ["**/components/**"])
-	- Glob-like patterns for files/folders where docs should run. Only `.svelte` files are processed.
+2. `sveltedoc.filesToDocument` (string[], default: **["\*\*/components/\*\*"]**)
+	- Glob-like patterns for files/folders where docs should run. **Only `.svelte` files are processed**.
 
-- sveltedoc.propertyNameMatch (string[], default: ["*Props"])
+3. `sveltedoc.propertyNameMatch` (string[], default: **["\*Props"]**)
 	- Fallback patterns for the props type alias when it can't be inferred from `$props()`.
 	- Works with both `type` and `interface` declarations (e.g., `type ButtonProps = {...}` or `interface ButtonProps { ... }`).
 
-- sveltedoc.addDescription (boolean, default: true)
+4. `sveltedoc.addDescription` (boolean, default: **true**)
 	- Include an editable description section in the @component block.
+	- Changes to this section will be persisted, while the props will always be auto generated from the JSDoc comments.
 
-- sveltedoc.placeDescriptionBeforeProps (boolean, default: true)
-	- Whether to place the description before the props section.
+5. `sveltedoc.placeDescriptionBeforeProps` (boolean, default: **false**)
+	- Whether to place the description before or after the props section.
 
-## File matching guide (filesToDocument)
+## File matching guide
 
 The extension runs on save only for files whose path matches your `sveltedoc.filesToDocument` patterns.
 
@@ -66,14 +81,14 @@ Tip: You can add more patterns if you keep components in different places, e.g.
 {
 	"sveltedoc.filesToDocument": [
 		"**/components/**",
-		"packages/ui/src/**"
+		"**/src/lib/features/**"
 	]
 }
 ```
 
 ## Output channel
 
-The extension writes detailed logs to the "SvelteDoc" output channel (View -> Output -> SvelteDoc) so you can see what it detected and changed.
+The extension writes detailed logs to the "SvelteDoc" output channel (View -> Output -> SvelteDoc) so you can see what it detected and changed. If there are any errors with the extension then they will be displayed here.
 
 ## How it works
 
@@ -81,14 +96,17 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 2. Detects `$props()` destructuring and captures defaults and `$bindable(...)` usage.
 3. Resolves the props type as a type alias or interface and parses object members, optionality, JSDoc summaries, and inherited types.
 4. Renders a single `@component` block and inserts it before the first TS `<script>` tag.
-5. Preserves only the description section; everything else is regenerated. If the description is placed before props, we keep lines before the `### Props` header. If the description is after props, we keep lines after the props list to the closing `-->`.
+5. Preserves only the description section; everything else is regenerated. If the description is placed before props, we keep lines before the `### Props` header. If the description is after props, we keep lines after the props list to the closing `-->`. The position of the description is determined by the `sveltedoc.placeDescriptionBeforeProps` setting.
 
 ## Notes
 
 - If no props are detected, `### Props` is omitted and the block becomes description-only (still useful for hovers).
 - Defaults using `$bindable(inner)` are shown as `inner`.
-- Angle brackets are escaped in plain text; code spans remain verbatim.
- - Prop modifiers are compact: required `!` and bindable `$` are adjacent to each other (e.g., `!$ name`).
+- Angle brackets (`<` and `>`) and apostrophies (`'`) are replaced with special characters/codes because of bugs and compatability issues with other extensions.
+ - Prop modifiers are shortened and placed at the begining of the property name.
+ 	- `!` = required
+	- `$` = bindable
+	- Example: `!$ name string - <description_here>` is a required **string** property called **name** and can be bound to using `$bindable('some string here')`.
 
 ## Troubleshooting
 
@@ -96,7 +114,23 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 	- Ensure the file path matches `sveltedoc.filesToDocument`.
 	- Confirm the file has `<script lang="ts">` blocks.
 	- Check the SvelteDoc output channel for diagnostics.
+- `<script>` tag is corrupted after saving.
+	- This seems to be an intermittent bug caused by **Auto Rename Tag** extension. This is why the angled brackets and apostrophies are replaced with special characters.
+	- Please report this issue if you run into it and provide your type defenition, including the JSDoc comments you are using.
+
+> Please report any bugs to the GitHub issues page for them to be triaged and fixed.
+
+## References
+
+Here are a list of references that helped me build this extension.
+- [Svelte Type Safety](https://svelte.dev/docs/svelte/$props#Type-safety): Outlines how to properly type your component properties.
+- [Svelte Component Documentation](https://svelte.dev/docs/svelte/faq#How-do-I-document-my-components): Provides an exmple of how to create component documentation.
+
+## Release Notes
+
+> Please see the changelog for release notes.
+[Changelog](CHANGELOG.md)
 
 ## License
 
-See LICENSE.
+See [LICENSE](LICENSE).
