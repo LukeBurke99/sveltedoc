@@ -11,9 +11,8 @@ Generate and maintain component documentation blocks for your Svelte 5 component
 - Parses your Svelte component's TypeScript to discover props from `$props()` typed destructuring.
 - Finds the props type alias (e.g., `Props`, `ButtonProps`) or falls back to patterns like `*Props`.
 - Builds a single `<!-- @component ... -->` block at the top of the file.
-- Preserves your description across runs and updates only the props section.
+- Preserves your free-form description text across runs and updates only the generated parts.
 - Supports inherited types via intersections (e.g., `HTMLAttributes<...> & { ... }`).
-- Respects a `---` delimiter inside the comment; anything after it is preserved exactly.
 
 ## Command
 
@@ -82,13 +81,14 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 2. Detects `$props()` destructuring and captures defaults and `$bindable(...)` usage.
 3. Resolves the props type as a type alias or interface and parses object members, optionality, JSDoc summaries, and inherited types.
 4. Renders a single `@component` block and inserts it before the first TS `<script>` tag.
-5. Preserves your description and any content after a `---` delimiter inside the comment.
+5. Preserves only the description section under the title; everything else is regenerated. If title/description are placed before props, we keep lines between `## Title` and the `### Props` header. If title/description are after props, we keep lines from `## Title` to the closing `-->`.
 
 ## Notes
 
 - If no props are detected, `### Props` is omitted and the block becomes description-only (still useful for hovers).
 - Defaults using `$bindable(inner)` are shown as `inner`.
 - Angle brackets are escaped in plain text; code spans remain verbatim.
+ - Prop modifiers are compact: required `!` and bindable `$` are adjacent to each other (e.g., `!$ name`).
 
 ## Troubleshooting
 

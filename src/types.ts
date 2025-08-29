@@ -50,8 +50,6 @@ export type BuildOptions = {
 	inherits: string[];
 	/** props to render as bullets */
 	props: PropDoc[];
-	/** content after a --- delimiter inside the block to preserve */
-	preservedTail?: string;
 };
 
 /**

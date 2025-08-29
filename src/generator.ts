@@ -24,12 +24,10 @@ export function processSvelteDoc(
 	}
 	const {
 		scripts,
-		leadingComment,
-		preservedTail
+		leadingComment
 	}: {
 		scripts: string[];
 		leadingComment?: { raw: string; description: string };
-		preservedTail?: string;
 	} = extractScriptsAndLeadingComment(source);
 	const combinedTS = scripts.join('\n\n');
 	const extract = extractDocsFromTS(combinedTS, options.propertyNameMatch);
@@ -50,11 +48,11 @@ export function processSvelteDoc(
 		filePath,
 		existingDescription: leadingComment?.description ?? '',
 		inherits: extract.inherits,
-		props: extract.props,
-		preservedTail
+		props: extract.props
 	});
 
 	const updated = insertOrUpdateComment(source, newComment);
+	console.log('Updated comment:', updated);
 	const changed = updated !== source;
 	log.push(
 		'Props extracted: ' +
@@ -74,7 +72,6 @@ export function processSvelteDoc(
 function extractScriptsAndLeadingComment(source: string): {
 	scripts: string[];
 	leadingComment?: { raw: string; description: string };
-	preservedTail?: string;
 } {
 	const scripts: string[] = [];
 	const scriptRegex = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -85,15 +82,13 @@ function extractScriptsAndLeadingComment(source: string): {
 	const firstScriptIdx = source.search(/<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i);
 	const head = firstScriptIdx === -1 ? source : source.slice(0, firstScriptIdx);
 	let leadingComment: { raw: string; description: string } | undefined;
-	let preservedTail: string | undefined;
 	const compMatch = /<!--\s*@component[\s\S]*?-->\s*$/i.exec(head.trimStart());
 	if (compMatch) {
 		const raw = compMatch[0];
 		const description = extractDescriptionFromComment(raw);
 		leadingComment = { raw, description };
-		preservedTail = extractTailAfterDashLine(raw);
 	}
-	return { scripts, leadingComment, preservedTail };
+	return { scripts, leadingComment };
 }
 
 /** Parse concatenated TS code to extract props and inherits. */
@@ -372,14 +367,16 @@ function buildComment(input: BuildOptions): string {
 
 	const inheritsLine =
 		input.inherits.length > 0
-			? `#### Inherits: ${input.inherits.map((t) => wrapCode(t.trim())).join(' & ')}`
+			? `#### Inherits: ${input.inherits.map((t) => escapeAngle(wrapCode(t.trim()))).join(' & ')}`
 			: '';
 
 	const propLines = input.props.map((p) => {
-		const requiredMark = p.optional ? '' : '! ';
-		const bindMark = p.bindable ? '$ ' : '';
-		const namePart = `${requiredMark}${bindMark}${p.name}`.trimStart();
-		const typePart = wrapCode(sanitizeInline(p.typeText), '**');
+		// No spaces between modifier symbols and name, e.g. '!$ color'
+		const requiredMark = p.optional ? '' : '!';
+		const bindMark = p.bindable ? '$' : '';
+		const modifier = `${requiredMark}${bindMark}`;
+		const namePart = `${modifier}${modifier ? ' ' : ''}${p.name}`.trim();
+		const typePart = escapeAngle(wrapCode(sanitizeInline(p.typeText), '**'));
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
 		const defaultPart = defaultVal ? ` = ${wrapCode(defaultVal)}` : '';
 		const desc = p.description ? ` — ${sanitizeInline(stripRequiredHint(p.description))}` : '';
@@ -412,56 +409,48 @@ function buildComment(input: BuildOptions): string {
 		lines.push(...titleBlock);
 	}
 
-	// Append preserved tail, if any, after a --- delimiter
-	if (input.preservedTail && input.preservedTail.trim().length > 0) {
-		if (lines[lines.length - 1] !== '---') lines.push('---');
-		lines.push(input.preservedTail.trim());
-	}
-
 	lines.push('-->');
-	return lines.join('\n');
+	return lines.join('\r\n');
 }
 
 /** Insert the new @component block, replacing any previous one and placing it before the first TS script. */
 function insertOrUpdateComment(source: string, newComment: string): string {
-	const headerRe = /<!--\s*@component[\s\S]*?-->/i;
+	const headerRe = /<!--\s*@component[\s\S]*?-->\r\n/i;
 	const scriptOpen = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i;
-	const lm = /^(\uFEFF)?\s*/.exec(source);
-	const leadingWs = lm ? lm[0] : '';
 
-	// Remove any existing @component header
-	const body = source.replace(headerRe, '').trimStart();
-
-	const firstScriptIdx = body.search(scriptOpen);
-	if (firstScriptIdx !== -1) {
-		const before = body.slice(0, firstScriptIdx);
-		const after = body.slice(firstScriptIdx);
-		return `${leadingWs}${before}${newComment}\n${after}`;
+	// Remove any existing @component header by slicing exactly its range
+	let body = source;
+	const existing = headerRe.exec(body);
+	if (existing) {
+		const st = body.slice(0, existing.index);
+		const en = body.slice(existing.index + existing[0].length);
+		body = st + en;
 	}
-	return `${leadingWs}${newComment}\n${body}`;
+
+	const openMatch = scriptOpen.exec(body);
+	if (openMatch) {
+		const idx = openMatch.index;
+		return body.slice(0, idx) + newComment + '\r\n' + body.slice(idx);
+	}
+	return newComment + '\r\n' + body;
 }
 
-/** Extract preserved description between ## Title and ### Props (or ---). */
+/** Extract preserved description text under the title. If title/description are
+ *  before props, keep lines between '## Title' and next '### Props'. If title/description
+ *  are after props, keep lines from '## Title' to the closing '-->'. Regardless of
+ *  placement, only this description region is preserved; content elsewhere is regenerated. */
 function extractDescriptionFromComment(raw: string): string {
-	let idx = raw.indexOf('\n## ');
-	if (idx === -1) idx = raw.indexOf('## ');
+	// Ensure we don't carry the comment close marker into the preserved text
+	const closeIdx = raw.lastIndexOf('-->');
+	const rawCore = closeIdx !== -1 ? raw.slice(0, closeIdx) : raw;
+	let idx = rawCore.indexOf('\n## ');
+	if (idx === -1) idx = rawCore.indexOf('## ');
 	if (idx === -1) return '';
-	const headerLineEnd = raw.indexOf('\n', idx + 1);
+	const headerLineEnd = rawCore.indexOf('\n', idx + 1);
 	if (headerLineEnd === -1) return '';
-	const afterHeader = raw.slice(headerLineEnd + 1);
+	const afterHeader = rawCore.slice(headerLineEnd + 1);
 	const propsIdx = afterHeader.indexOf('\n### Props');
-	const propsOrEndIdx = propsIdx === -1 ? afterHeader.indexOf('\n---') : propsIdx;
-	const section = propsOrEndIdx === -1 ? afterHeader : afterHeader.slice(0, propsOrEndIdx);
+	const section = propsIdx === -1 ? afterHeader : afterHeader.slice(0, propsIdx);
 	const cleaned = section.replace(/^\s+|\s+$/g, '').replace(/<!--[\s\S]*?-->/g, '');
 	return cleaned.trim();
-}
-
-/** Extract any preserved tail content following a --- line inside the comment. */
-function extractTailAfterDashLine(raw: string): string | undefined {
-	const idx = raw.indexOf('\n---');
-	if (idx === -1) return undefined;
-	const after = raw.slice(idx + 4);
-	const closeIdx = after.lastIndexOf('-->');
-	const core = closeIdx === -1 ? after : after.slice(0, closeIdx);
-	return core.replace(/^\s+|\s+$/g, '');
 }
