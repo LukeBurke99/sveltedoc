@@ -367,7 +367,9 @@ function buildComment(input: BuildOptions): string {
 
 	const inheritsLine =
 		input.inherits.length > 0
-			? `#### Inherits: ${input.inherits.map((t) => escapeAngle(wrapCode(t.trim()))).join(' & ')}`
+			? `#### Inherits: ${input.inherits
+					.map((t) => wrapCode(escapeAngle(t.trim())))
+					.join(' & ')}`
 			: '';
 
 	const propLines = input.props.map((p) => {
@@ -376,9 +378,9 @@ function buildComment(input: BuildOptions): string {
 		const bindMark = p.bindable ? '$' : '';
 		const modifier = `${requiredMark}${bindMark}`;
 		const namePart = `${modifier}${modifier ? ' ' : ''}${p.name}`.trim();
-		const typePart = escapeAngle(wrapCode(sanitizeInline(p.typeText), '**'));
+		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText)), '**');
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
-		const defaultPart = defaultVal ? ` = ${wrapCode(defaultVal)}` : '';
+		const defaultPart = defaultVal ? ` = ${wrapCode(escapeAngle(defaultVal))}` : '';
 		const desc = p.description ? ` — ${sanitizeInline(stripRequiredHint(p.description))}` : '';
 		return `- ${wrapCode(namePart)} ${typePart}${defaultPart}${desc}`;
 	});
