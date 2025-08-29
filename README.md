@@ -33,11 +33,11 @@ Settings live under the `sveltedoc` namespace.
 	- Fallback patterns for the props type alias when it can't be inferred from `$props()`.
 	- Works with both `type` and `interface` declarations (e.g., `type ButtonProps = {...}` or `interface ButtonProps { ... }`).
 
-- sveltedoc.addTitleAndDescription (boolean, default: true)
-	- Include `## ComponentName` and the free-form description text in the comment.
+- sveltedoc.addDescription (boolean, default: true)
+	- Include an editable description section in the @component block.
 
-- sveltedoc.placeTitleBeforeProps (boolean, default: true)
-	- Whether to place the title/description before the props section.
+- sveltedoc.placeDescriptionBeforeProps (boolean, default: true)
+	- Whether to place the description before the props section.
 
 ## File matching guide (filesToDocument)
 
@@ -81,7 +81,7 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 2. Detects `$props()` destructuring and captures defaults and `$bindable(...)` usage.
 3. Resolves the props type as a type alias or interface and parses object members, optionality, JSDoc summaries, and inherited types.
 4. Renders a single `@component` block and inserts it before the first TS `<script>` tag.
-5. Preserves only the description section under the title; everything else is regenerated. If title/description are placed before props, we keep lines between `## Title` and the `### Props` header. If title/description are after props, we keep lines from `## Title` to the closing `-->`.
+5. Preserves only the description section; everything else is regenerated. If the description is placed before props, we keep lines before the `### Props` header. If the description is after props, we keep lines after the props list to the closing `-->`.
 
 ## Notes
 

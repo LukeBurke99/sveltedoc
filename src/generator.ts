@@ -1,4 +1,3 @@
-import path from 'node:path';
 import {
 	escapeRegExp,
 	scanToTopLevelSemicolon,
@@ -13,7 +12,6 @@ const START_MARK = '<!-- @component';
 /** Process a Svelte component document and produce an updated version with a fresh @component block. */
 export function processSvelteDoc(
 	source: string,
-	filePath: string,
 	options: ProcessOptions
 ): { updated: string; changed: boolean; log: string[] } {
 	const log: string[] = [];
@@ -33,19 +31,14 @@ export function processSvelteDoc(
 	const extract = extractDocsFromTS(combinedTS, options.propertyNameMatch);
 
 	// If no props and no inherits, and title/desc disabled, do nothing
-	if (
-		!options.addTitleAndDescription &&
-		extract.props.length === 0 &&
-		extract.inherits.length === 0
-	) {
+	if (!options.addDescription && extract.props.length === 0 && extract.inherits.length === 0) {
 		log.push('No props/inherits and title/description disabled — skipping doc block');
 		return { updated: source, changed: false, log };
 	}
 
 	const newComment = buildComment({
-		addTitleAndDescription: options.addTitleAndDescription,
-		placeTitleBeforeProps: options.placeTitleBeforeProps,
-		filePath,
+		addDescription: options.addDescription,
+		placeDescriptionBeforeProps: options.placeDescriptionBeforeProps,
 		existingDescription: leadingComment?.description ?? '',
 		inherits: extract.inherits,
 		props: extract.props
@@ -360,9 +353,7 @@ function stripRequiredHint(text: string): string {
 
 /** Render the @component block according to settings and extracted data. */
 function buildComment(input: BuildOptions): string {
-	const fileName = path.basename(input.filePath);
-	const title = fileName.replace(/\.svelte$/i, '');
-	const description = input.addTitleAndDescription
+	const description = input.addDescription
 		? escapeAngle(input.existingDescription.trim() || 'no description yet')
 		: '';
 
@@ -389,11 +380,8 @@ function buildComment(input: BuildOptions): string {
 	const hasAnyProps = input.props.length > 0 || input.inherits.length > 0;
 	const lines: string[] = [START_MARK];
 
-	const titleBlock: string[] = [];
-	if (input.addTitleAndDescription) {
-		titleBlock.push(`## ${title}`);
-		titleBlock.push(description || 'no description yet');
-	}
+	const descBlock: string[] = [];
+	if (input.addDescription) descBlock.push(description || 'no description yet');
 
 	const propsBlock: string[] = [];
 	if (hasAnyProps) {
@@ -402,14 +390,14 @@ function buildComment(input: BuildOptions): string {
 		propsBlock.push(...propLines);
 	}
 
-	if (input.placeTitleBeforeProps) {
-		lines.push(...titleBlock);
-		if (titleBlock.length > 0 && hasAnyProps) lines.push('');
+	if (input.placeDescriptionBeforeProps) {
+		lines.push(...descBlock);
+		if (descBlock.length > 0 && hasAnyProps) lines.push('');
 		lines.push(...propsBlock);
 	} else {
 		lines.push(...propsBlock);
-		if (propsBlock.length > 0 && titleBlock.length > 0) lines.push('');
-		lines.push(...titleBlock);
+		if (propsBlock.length > 0 && descBlock.length > 0) lines.push('');
+		lines.push(...descBlock);
 	}
 
 	lines.push('-->');
@@ -438,22 +426,42 @@ function insertOrUpdateComment(source: string, newComment: string): string {
 	return newComment + '\r\n' + body;
 }
 
-/** Extract preserved description text under the title. If title/description are
- *  before props, keep lines between '## Title' and next '### Props'. If title/description
- *  are after props, keep lines from '## Title' to the closing '-->'. Regardless of
- *  placement, only this description region is preserved; content elsewhere is regenerated. */
+/** Extract preserved free-form description from an existing @component block.
+ *  If description is before props, we keep lines before '### Props'. If description
+ *  is after props, we keep lines after the prop bullets (accounting for optional
+ *  inherits line) up to the closing marker. Only this description region is preserved. */
 function extractDescriptionFromComment(raw: string): string {
 	// Ensure we don't carry the comment close marker into the preserved text
 	const closeIdx = raw.lastIndexOf('-->');
-	const rawCore = closeIdx !== -1 ? raw.slice(0, closeIdx) : raw;
-	let idx = rawCore.indexOf('\n## ');
-	if (idx === -1) idx = rawCore.indexOf('## ');
-	if (idx === -1) return '';
-	const headerLineEnd = rawCore.indexOf('\n', idx + 1);
-	if (headerLineEnd === -1) return '';
-	const afterHeader = rawCore.slice(headerLineEnd + 1);
-	const propsIdx = afterHeader.indexOf('\n### Props');
-	const section = propsIdx === -1 ? afterHeader : afterHeader.slice(0, propsIdx);
-	const cleaned = section.replace(/^\s+|\s+$/g, '').replace(/<!--[\s\S]*?-->/g, '');
-	return cleaned.trim();
+	const core = (closeIdx !== -1 ? raw.slice(0, closeIdx) : raw).replace(/\r\n/g, '\n');
+	const startIdx = core.indexOf(START_MARK);
+	const afterStart = startIdx !== -1 ? core.slice(startIdx + START_MARK.length) : core;
+	const text = afterStart.replace(/^\n/, '');
+
+	const propsHeader = '\n### Props';
+	let propsIdx = text.indexOf(propsHeader);
+	if (propsIdx === -1 && text.startsWith('### Props')) propsIdx = 0;
+	if (propsIdx === -1)
+		// No props header at all; entire body is description
+		return text.replace(/<!--[\s\S]*?-->/g, '').trim();
+
+	const before = text.slice(0, propsIdx).trim();
+	if (before.length > 0)
+		// Description-before-props case
+		return before.replace(/<!--[\s\S]*?-->/g, '').trim();
+
+	// Description-after-props case: parse lines after the props header
+	const headerLen = propsIdx === 0 ? '### Props'.length : propsHeader.length;
+	const after = text.slice(propsIdx + headerLen).split('\n');
+	let i = 0;
+	// Skip optional whitespace line(s)
+	while (i < after.length && after[i].trim() === '') i++;
+	// Optional inherits line
+	if (i < after.length && /^####\s+Inherits\b/.test(after[i])) i++;
+	// Skip prop bullet lines starting with '- '
+	while (i < after.length && /^-\s/.test(after[i])) i++;
+	// Skip a single blank line after bullets
+	if (i < after.length && after[i].trim() === '') i++;
+	const desc = after.slice(i).join('\n');
+	return desc.replace(/<!--[\s\S]*?-->/g, '').trim();
 }

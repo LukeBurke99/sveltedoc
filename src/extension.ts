@@ -49,18 +49,23 @@ export function activate(context: vscode.ExtensionContext): void {
 		}
 
 		const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
-		const addTitleAndDescription = cfg.get<boolean>('addTitleAndDescription', true);
-		const placeTitleBeforeProps = cfg.get<boolean>('placeTitleBeforeProps', true);
+		// Backward compat: map old settings if present
+		const legacyAdd = cfg.get<boolean>('addTitleAndDescription', true);
+		const addDescription = cfg.get<boolean>('addDescription', legacyAdd);
+		const placeDescriptionBeforeProps = cfg.get<boolean>(
+			'placeDescriptionBeforeProps',
+			cfg.get<boolean>('placeTitleBeforeProps', true)
+		);
 
 		const options: ProcessOptions = {
 			propertyNameMatch,
-			addTitleAndDescription,
-			placeTitleBeforeProps
+			addDescription,
+			placeDescriptionBeforeProps
 		};
 
 		const start = Date.now();
 		const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
-			processSvelteDoc(doc.getText(), doc.fileName, options);
+			processSvelteDoc(doc.getText(), options);
 
 		logToChannel(
 			`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,
@@ -83,18 +88,22 @@ async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promis
 	channel ??= vscode.window.createOutputChannel('SvelteDoc');
 	const cfg = vscode.workspace.getConfiguration('sveltedoc', doc.uri);
 	const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
-	const addTitleAndDescription = cfg.get<boolean>('addTitleAndDescription', true);
-	const placeTitleBeforeProps = cfg.get<boolean>('placeTitleBeforeProps', true);
+	const legacyAdd = cfg.get<boolean>('addTitleAndDescription', true);
+	const addDescription = cfg.get<boolean>('addDescription', legacyAdd);
+	const placeDescriptionBeforeProps = cfg.get<boolean>(
+		'placeDescriptionBeforeProps',
+		cfg.get<boolean>('placeTitleBeforeProps', true)
+	);
 
 	const options: ProcessOptions = {
 		propertyNameMatch,
-		addTitleAndDescription,
-		placeTitleBeforeProps
+		addDescription,
+		placeDescriptionBeforeProps
 	};
 
 	const start = Date.now();
 	const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
-		processSvelteDoc(doc.getText(), doc.fileName, options);
+		processSvelteDoc(doc.getText(), options);
 
 	logToChannel(
 		`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,

@@ -38,12 +38,10 @@ export type ExtractResult = {
  * Options used when rendering a @component block.
  */
 export type BuildOptions = {
-	/** whether to include title and description in the block */
-	addTitleAndDescription: boolean;
-	/** if true, place title/description before props; else after */
-	placeTitleBeforeProps: boolean;
-	/** absolute file path used to derive component title */
-	filePath: string;
+	/** whether to include the free-form description in the block */
+	addDescription: boolean;
+	/** if true, place the description before props; else after */
+	placeDescriptionBeforeProps: boolean;
 	/** previously captured description text (if any) */
 	existingDescription: string;
 	/** intersection types to render in the inherits line */
@@ -58,8 +56,8 @@ export type BuildOptions = {
 export type ProcessOptions = {
 	/** patterns to find a props type alias when not inferred from $props() */
 	propertyNameMatch: string[];
-	/** include title and description or not */
-	addTitleAndDescription: boolean;
-	/** placement of title and description relative to props */
-	placeTitleBeforeProps: boolean;
+	/** include description or not */
+	addDescription: boolean;
+	/** placement of description relative to props */
+	placeDescriptionBeforeProps: boolean;
 };

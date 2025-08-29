@@ -86,15 +86,15 @@
 					],
 					"description": "Type/interface name patterns to use when the $props() destructuring type cannot be inferred. Supports * as a wildcard (e.g., *Props)."
 				},
-				"sveltedoc.addTitleAndDescription": {
+				"sveltedoc.addDescription": {
 					"type": "boolean",
 					"default": true,
-					"description": "Include the '## ComponentName' and description lines in the @component block."
+					"description": "Include an editable description section in the @component block."
 				},
-				"sveltedoc.placeTitleBeforeProps": {
+				"sveltedoc.placeDescriptionBeforeProps": {
 					"type": "boolean",
-					"default": true,
-					"description": "If true, place the title and description before the Props section; otherwise, place them after."
+					"default": false,
+					"description": "If true, place the description before the Props section; otherwise, place it after."
 				}
 			}
 		}
