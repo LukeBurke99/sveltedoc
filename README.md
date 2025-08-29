@@ -49,7 +49,7 @@ While SvelteDoc works out of the box and is configured for the most productive s
 
 4. `sveltedoc.addDescription` (boolean, default: **true**)
 	- Include an editable description section in the @component block.
-	- Changes to this section will be persisted, while the props will always be auto generated from the JSDoc comments.
+	- Changes to this section will be persisted, while the props will always be auto-generated from the JSDoc comments.
 
 5. `sveltedoc.placeDescriptionBeforeProps` (boolean, default: **false**)
 	- Whether to place the description before or after the props section.
@@ -102,11 +102,11 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 
 - If no props are detected, `### Props` is omitted and the block becomes description-only (still useful for hovers).
 - Defaults using `$bindable(inner)` are shown as `inner`.
-- Angle brackets (`<` and `>`) and apostrophies (`'`) are replaced with special characters/codes because of bugs and compatability issues with other extensions.
- - Prop modifiers are shortened and placed at the begining of the property name.
+- Angle brackets (`<` and `>`) and apostrophes (`'`) are replaced with special characters/codes because of bugs and compatibility issues with other extensions.
+ - Prop modifiers are shortened and placed at the beginning of the property name.
  	- `!` = required
 	- `$` = bindable
-	- Example: `!$ name string - <description_here>` is a required **string** property called **name** and can be bound to using `$bindable('some string here')`.
+	- Example: `!$ name string - <description_here>` is a required **string** property called **name** and can be bound using `$bindable('some string here')`.
 
 ## Troubleshooting
 
@@ -115,16 +115,16 @@ The extension writes detailed logs to the "SvelteDoc" output channel (View -> Ou
 	- Confirm the file has `<script lang="ts">` blocks.
 	- Check the SvelteDoc output channel for diagnostics.
 - `<script>` tag is corrupted after saving.
-	- This seems to be an intermittent bug caused by **Auto Rename Tag** extension. This is why the angled brackets and apostrophies are replaced with special characters.
-	- Please report this issue if you run into it and provide your type defenition, including the JSDoc comments you are using.
+	- This seems to be an intermittent bug caused by the **Auto Rename Tag** extension. This is why the angle brackets and apostrophes are replaced with special characters.
+	- Please report this issue if you run into it and provide your type definition, including the JSDoc comments you are using.
 
 > Please report any bugs to the GitHub issues page for them to be triaged and fixed.
 
 ## References
 
-Here are a list of references that helped me build this extension.
+Here is a list of references that helped me build this extension.
 - [Svelte Type Safety](https://svelte.dev/docs/svelte/$props#Type-safety): Outlines how to properly type your component properties.
-- [Svelte Component Documentation](https://svelte.dev/docs/svelte/faq#How-do-I-document-my-components): Provides an exmple of how to create component documentation.
+- [Svelte Component Documentation](https://svelte.dev/docs/svelte/faq#How-do-I-document-my-components): Provides an example of how to create component documentation.
 
 ## Release Notes
 
