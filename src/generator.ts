@@ -328,13 +328,14 @@ function splitIntersection(typeRhs: string): string[] {
 }
 
 /** Collapse whitespace in inline sections (bullets). */
-function sanitizeInline(text: string): string {
-	return text.replace(/\s+/g, ' ').trim();
+function sanitizeInline(text: string, replaceApos: boolean = true): string {
+	const r = text.replace(/\s+/g, ' ');
+	return replaceApos ? r.replace(/'/g, '&apos;').trim() : r.trim();
 }
 
 /** Escape angle brackets in plain text (not code spans). */
 function escapeAngle(text: string): string {
-	return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	return text.replace(/</g, '◄').replace(/>/g, '►');
 }
 
 /** Wrap text using code or bold markers. */
@@ -378,7 +379,7 @@ function buildComment(input: BuildOptions): string {
 		const bindMark = p.bindable ? '$' : '';
 		const modifier = `${requiredMark}${bindMark}`;
 		const namePart = `${modifier}${modifier ? ' ' : ''}${p.name}`.trim();
-		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText)), '**');
+		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText, false)), '**');
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
 		const defaultPart = defaultVal ? ` = ${wrapCode(escapeAngle(defaultVal))}` : '';
 		const desc = p.description ? ` — ${sanitizeInline(stripRequiredHint(p.description))}` : '';
