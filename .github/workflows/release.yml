@@ -1,0 +1,57 @@
+## CI workflow to test and publish the VS Code extension on pushes to master
+name: Release
+
+on:
+    # Trigger the workflow whenever commits are pushed to the master branch
+    push:
+        branches: [master]
+
+permissions:
+    # Minimal permissions required for creating releases/tags and updating PRs
+    contents: write
+    pull-requests: write
+
+jobs:
+    release:
+        # Use the latest Ubuntu runner
+        runs-on: ubuntu-latest
+        # Skip running if the commit message indicates it's an automated release commit
+        if: "!contains(github.event.head_commit.message, 'chore(release)')"
+
+        steps:
+            - name: Checkout
+              # Checkout the repo with full history (for changelog/tag generation)
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Setup Node.js
+              # Install Node.js runtime used by the project and tooling
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+
+            - name: Install pnpm
+              # Set up pnpm package manager (ensure version matches your project constraints)
+              uses: pnpm/action-setup@v2
+
+            - name: Install dependencies
+              # Install all dependencies according to lockfile
+              run: pnpm install
+
+            - name: Run prerelease checks
+              # Run tests/lint/build before releasing (configured in package.json -> scripts.prerelease)
+              run: pnpm run prerelease
+
+            - name: Release
+              env:
+                  # GitHub token for repo write actions (tags/releases). Provided automatically by GitHub.
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  # Personal Access Token for publishing to the VS Code Marketplace via vsce
+                  # Must be configured in the repo secrets as VSCE_PAT
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: |
+                  git config --global user.name 'github-actions[bot]'
+                  git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+                  pnpm run release:ci
