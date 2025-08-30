@@ -4,8 +4,8 @@ import {
 	splitOnce,
 	splitTopLevel,
 	wildcardToRegex
-} from './core.js';
-import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './types.js';
+} from './core';
+import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './types';
 
 const START_MARK = '<!-- @component';
 

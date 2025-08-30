@@ -218,7 +218,8 @@ export function scanToTopLevelSemicolon(code: string, startIndex: number): numbe
  * @returns A RegExp that matches the entire input string against the pattern.
  */
 export function wildcardToRegex(pattern: string): RegExp {
-	const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+	// Escape regex meta, then map '*' wildcard to '.*' (match any chars, including '/')
+	const escaped = escapeRegExp(pattern).replace(/\\\*/g, '.*');
 	return new RegExp(`^${escaped}$`);
 }
 

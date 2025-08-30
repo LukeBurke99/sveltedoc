@@ -1,3 +1,5 @@
+import { escapeRegExp } from './core';
+
 /**
  * Convert a simple glob to a regex pattern string.
  *
@@ -10,15 +12,14 @@
  * @returns A regex source string suitable for constructing a RegExp.
  */
 export function globToRegex(glob: string): string {
-	const ESCAPE_RE = /[.+^${}()|[\]\\]/g;
-	// Escape regex specials first
-	let s = glob.replace(ESCAPE_RE, (ch) => `\\${ch}`);
-	// Protect ** so the single * replacement won't affect it
+	// Protect ** so single-star handling won't affect it
 	const DDSTAR = '\u0000';
-	s = s.replace(/\*\*/g, DDSTAR);
-	// Single * = any chars except '/'
-	s = s.replace(/\*/g, '[^/]*');
-	// Restore ** = any chars, including '/'
+	let s = glob.replace(/\*\*/g, DDSTAR);
+	// Escape all regex meta (including '?'), then reintroduce star semantics
+	s = escapeRegExp(s);
+	// Single * (escaped as \*) => any chars except '/'
+	s = s.replace(/\\\*/g, '[^/]*');
+	// Restore ** => any chars, including '/'
 	s = s.replace(new RegExp(DDSTAR, 'g'), '.*');
 	return s;
 }
