@@ -40,7 +40,7 @@
 				"changelogTitle": "# Change Log\n\nAll notable changes to this project will be documented in this file."
 			}
 		],
-		"@semantic-release/npm",
+		["@semantic-release/npm", { "npmPublish": false }],
 		[
 			"@semantic-release/git",
 			{
