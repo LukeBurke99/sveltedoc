@@ -3,7 +3,7 @@
 	"publisher": "burke-development",
 	"displayName": "SvelteDoc",
 	"description": "Automatically generate and maintain documentation for your Svelte components, right inside VS Code.",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"icon": "images/logo/512.png",
 	"galleryBanner": {
 		"theme": "dark",
@@ -16,20 +16,35 @@
 	],
 	"keywords": [
 		"svelte",
+		"svelte5",
+		"sveltekit",
+		"sveltedoc",
+		"component",
+		"components",
+		"component-docs",
 		"documentation",
-		"autodoc",
-		"component docs",
+		"docs",
+		"docblock",
 		"jsdoc",
+		"auto-generate",
+		"generator",
+		"props",
+		"$props",
+		"bindable",
+		"component-props",
+		"prop-types",
+		"type-inference",
 		"typescript",
-		"code comments",
-		"api docs",
-		"vscode extension",
-		"svelte components",
-		"doc generator",
-		"auto documentation",
-		"developer tools",
-		"productivity",
-		"code helper"
+		"ts",
+		"hover",
+		"hover-docs",
+		"intellisense",
+		"api-docs",
+		"code-comments",
+		"comment-block",
+		"vscode",
+		"vscode-extension",
+		"developer-tools"
 	],
 	"license": "SEE LICENSE IN LICENSE",
 	"homepage": "https://github.com/LukeBurke99/sveltedoc/blob/master/README.md",
@@ -99,18 +114,29 @@
 			}
 		}
 	},
-	"type": "module",
+	"c8": {
+		"include": [
+			"src/**/*.ts"
+		],
+		"exclude": [
+			"src/test/**"
+		],
+		"reporter": [
+			"text",
+			"lcov"
+		],
+		"all": true
+	},
 	"scripts": {
-		"vscode:prepublish": "pnpm run compile",
-		"publish": "vsce publish",
 		"compile": "tsc -p ./",
-		"watch": "tsc -watch -p ./",
+		"lint": "eslint src --fix",
 		"pretest": "pnpm run compile && pnpm run lint",
-		"lint": "eslint src",
-		"test": "vscode-test",
-		"test:unit": "pnpm run compile && node out/match.test.js",
-		"prerelease": "node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
-		"release": "pnpm run compile && vsce package -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
+		"test": "mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
+		"coverage": "c8 mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
+		"prerelease": "pnpm test",
+		"release": "vsce publish",
+		"prepackage": "pnpm test && node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
+		"package": "vsce package -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.3.2",
@@ -131,6 +157,5 @@
 		"typescript": "^5.9.2",
 		"typescript-eslint": "^8.41.0"
 	},
-	"dependencies": {},
 	"packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
 }

@@ -1,12 +1,24 @@
+// core functions
+
+//#region String and regex helpers
+
 /**
- * Escape special characters in a string for use within a RegExp.
+ * Escape special characters in a string for safe use within a RegExp pattern.
+ *
+ * @param s - The input string to escape.
+ * @returns A new string where regex metacharacters are escaped.
  */
 export function escapeRegExp(s: string): string {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
- * Returns true if the character is a string delimiter quote.
+ * Check whether a character is a string delimiter quote.
+ *
+ * Acts as a type guard for common quote characters.
+ *
+ * @param ch - The character to test.
+ * @returns True if the character is a single quote, double quote, or backtick.
  */
 export function isQuote(ch: string): ch is '"' | "'" | '`' {
 	return ch === '"' || ch === "'" || ch === '`';
@@ -14,6 +26,11 @@ export function isQuote(ch: string): ch is '"' | "'" | '`' {
 
 /**
  * Split a string on the first occurrence of a delimiter.
+ *
+ * @param text - The text to split.
+ * @param delimiter - The delimiter to split on.
+ * @returns A tuple where the first item is the text before the first delimiter,
+ *          and the second item is the remainder after the delimiter (or undefined if not found).
  */
 export function splitOnce(text: string, delimiter: string): [string, string | undefined] {
 	const idx = text.indexOf(delimiter);
@@ -22,8 +39,17 @@ export function splitOnce(text: string, delimiter: string): [string, string | un
 		: [text.slice(0, idx), text.slice(idx + delimiter.length)];
 }
 
+//#endregion
+
+//#region Top-level parsing helpers
+
 /**
- * Top-level aware split by a separator (comma or ampersand), respecting nested pairs.
+ * Split a string by a separator only at the top level, respecting nested (), {}, [], and <> pairs,
+ * and quoted strings. Useful for splitting TypeScript type literals and intersections.
+ *
+ * @param input - The input string to split.
+ * @param sep - The separator character to split on, either ',' or '&'.
+ * @returns An array of top-level segments.
  */
 export function splitTopLevel(input: string, sep: ',' | '&'): string[] {
 	const parts: string[] = [];
@@ -92,7 +118,12 @@ export function splitTopLevel(input: string, sep: ',' | '&'): string[] {
 }
 
 /**
- * Scan forward until the next top-level semicolon.
+ * Scan code forward from a given index until the next top-level semicolon.
+ * Skips over nested (), {}, [], <> and respects quoted strings and comments.
+ *
+ * @param code - The full source code to scan.
+ * @param startIndex - The index at which to begin scanning.
+ * @returns The index of the next top-level semicolon or -1 if none is found.
  */
 export function scanToTopLevelSemicolon(code: string, startIndex: number): number {
 	let depthParens = 0;
@@ -176,10 +207,19 @@ export function scanToTopLevelSemicolon(code: string, startIndex: number): numbe
 	return -1;
 }
 
+//#endregion
+
+//#region Pattern helpers
+
 /**
- * Convert a simple glob-like pattern using * into a RegExp.
+ * Convert a simple glob-like pattern using '*' wildcards into a RegExp.
+ *
+ * @param pattern - The glob-like pattern where '*' matches any sequence (including empty).
+ * @returns A RegExp that matches the entire input string against the pattern.
  */
 export function wildcardToRegex(pattern: string): RegExp {
 	const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
 	return new RegExp(`^${escaped}$`);
 }
+
+//#endregion

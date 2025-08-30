@@ -9,7 +9,16 @@ import type { BuildOptions, ExtractResult, ProcessOptions, PropDoc } from './typ
 
 const START_MARK = '<!-- @component';
 
-/** Process a Svelte component document and produce an updated version with a fresh @component block. */
+/**
+ * Process a Svelte component document and produce an updated version with a fresh @component block.
+ *
+ * Reads the TypeScript `<script lang="ts">` blocks, extracts `$props()` typing and defaults,
+ * resolves the props/inherits lists, and inserts or updates a leading `<!-- @component ... -->` block.
+ *
+ * @param source - The full `.svelte` file contents.
+ * @param options - Processing options controlling description handling and name matching.
+ * @returns An object containing the updated source, a changed flag, and a log of steps.
+ */
 export function processSvelteDoc(
 	source: string,
 	options: ProcessOptions
@@ -61,7 +70,15 @@ export function processSvelteDoc(
 	return { updated, changed, log };
 }
 
-/** Extracts TS <script> contents and an existing leading @component comment if present. */
+//#region Extraction and parsing
+
+/**
+ * Extract TS `<script lang="ts">` contents and an existing leading `@component` comment, if present.
+ *
+ * @param source - The full `.svelte` source.
+ * @returns An object with an array of TypeScript script contents and an optional leading comment block
+ *          with its raw text and preserved description.
+ */
 function extractScriptsAndLeadingComment(source: string): {
 	scripts: string[];
 	leadingComment?: { raw: string; description: string };
@@ -84,7 +101,17 @@ function extractScriptsAndLeadingComment(source: string): {
 	return { scripts, leadingComment };
 }
 
-/** Parse concatenated TS code to extract props and inherits. */
+/**
+ * Parse concatenated TypeScript code to extract prop documentation and inherited types.
+ *
+ * Searches for typed `$props` destructuring to infer the props type and defaults, then resolves the
+ * found type alias or interface, collects members with optionality, descriptions, defaults, and
+ * whether they are bindable via `$bindable()`.
+ *
+ * @param tsCode - The combined TS code string from all `<script lang="ts">` blocks.
+ * @param patterns - Fallback name patterns for props types if direct inference fails.
+ * @returns An ExtractResult including props, inherits, inferred type name, and debug info.
+ */
 function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 	const result: ExtractResult = {
 		inferredTypeName: undefined,
@@ -232,7 +259,13 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 	return result;
 }
 
-/** Locate the RHS for a named type alias, allowing optional generics. */
+/**
+ * Locate the right-hand side expression for a named type alias, allowing optional generics.
+ *
+ * @param tsCode - Source TypeScript code.
+ * @param typeName - The alias name to find.
+ * @returns The trimmed RHS text of the type alias, or undefined if not found.
+ */
 function findTypeAliasBlock(tsCode: string, typeName: string): string | undefined {
 	let re = new RegExp(
 		String.raw`\bexport\s+type\s+${escapeRegExp(typeName)}\b\s*(?:<[^>]*?>)?\s*=`,
@@ -250,7 +283,13 @@ function findTypeAliasBlock(tsCode: string, typeName: string): string | undefine
 	return tsCode.slice(start, end).trim();
 }
 
-/** Find an interface declaration and return its members text and extends list. */
+/**
+ * Find an interface declaration and return its members text and extends list.
+ *
+ * @param tsCode - Source TypeScript code.
+ * @param typeName - The interface name to find.
+ * @returns The interface body members text and a list of extended interface/type names, or undefined.
+ */
 function findInterfaceBlock(
 	tsCode: string,
 	typeName: string
@@ -287,7 +326,14 @@ function findInterfaceBlock(
 	return { membersText: body, extends: extendsList };
 }
 
-/** Parse property signatures from an object type literal's members text. */
+/**
+ * Parse property signatures from an object type literal's members text.
+ *
+ * Extracts name, optionality, type text, and JSDoc summary for each property.
+ *
+ * @param membersText - The text inside a type literal or interface body.
+ * @returns A list of parsed member descriptors.
+ */
 function parseTypeMembers(
 	membersText: string
 ): { name: string; typeText: string; optional: boolean; description?: string }[] {
@@ -306,7 +352,12 @@ function parseTypeMembers(
 	return members;
 }
 
-/** Reduce a JSDoc block to a single-line summary. */
+/**
+ * Reduce a JSDoc block to a single-line summary.
+ *
+ * @param jsdoc - The full `/** ... *\/` text.
+ * @returns A single-line summary if any content exists; otherwise undefined.
+ */
 function extractJsDocSummary(jsdoc: string): string | undefined {
 	const inner = jsdoc.replace(/^\s*\/\*\*\s*/, '').replace(/\s*\*\/\s*$/, '');
 	const lines = inner
@@ -320,23 +371,46 @@ function splitIntersection(typeRhs: string): string[] {
 	return splitTopLevel(typeRhs, '&');
 }
 
-/** Collapse whitespace in inline sections (bullets). */
+/**
+ * Collapse repeated whitespace in inline sections (e.g., bullet items) and optionally
+ * replace apostrophes with HTML entities to avoid interference with editors.
+ *
+ * @param text - The input text to sanitize.
+ * @param replaceApos - Whether to replace apostrophes with `&apos;` (default true).
+ * @returns The sanitized single-spaced text.
+ */
 function sanitizeInline(text: string, replaceApos: boolean = true): string {
 	const r = text.replace(/\s+/g, ' ');
 	return replaceApos ? r.replace(/'/g, '&apos;').trim() : r.trim();
 }
 
-/** Escape angle brackets in plain text (not code spans). */
+/**
+ * Escape angle brackets in plain text (not code spans) using visible placeholder characters.
+ *
+ * @param text - The input text that may contain `<` or `>` characters.
+ * @returns The text with `<` replaced by `◄` and `>` replaced by `►`.
+ */
 function escapeAngle(text: string): string {
 	return text.replace(/</g, '◄').replace(/>/g, '►');
 }
 
-/** Wrap text using code or bold markers. */
+/**
+ * Wrap text using code or bold markers.
+ *
+ * @param text - The text to wrap.
+ * @param char - The delimiter character to use, e.g., '`' for code or '**' for bold.
+ * @returns The wrapped text.
+ */
 function wrapCode(text: string, char: string = '`'): string {
 	return char + text + char;
 }
 
-/** Normalize a default value for display, unwrapping $bindable(inner) and simple strings. */
+/**
+ * Normalize a default value for display, unwrapping `$bindable(inner)` and removing simple string quotes.
+ *
+ * @param defaultText - The raw default value text from the source.
+ * @returns A cleaned string suitable for display, or undefined if no default.
+ */
 function normalizeDefaultForDisplay(defaultText: string | undefined): string | undefined {
 	if (!defaultText) return undefined;
 	const trimmed = defaultText.trim().replace(/;$/, '');
@@ -346,12 +420,26 @@ function normalizeDefaultForDisplay(defaultText: string | undefined): string | u
 	return str ? str[1] : core;
 }
 
-/** Remove (required) hints from inline descriptions to avoid duplication. */
+/**
+ * Remove occurrences of the “(required)” hint from inline descriptions to avoid duplication.
+ *
+ * @param text - The description text possibly containing required hints.
+ * @returns The text without required-hint markers.
+ */
 function stripRequiredHint(text: string): string {
 	return text.replace(/\(\s*required\s*\)/gi, '').trim();
 }
 
-/** Render the @component block according to settings and extracted data. */
+//#endregion
+
+//#region Rendering
+
+/**
+ * Render the `@component` comment block according to settings and extracted data.
+ *
+ * @param input - Build options including description handling, inherits, and props list.
+ * @returns The full multi-line HTML comment string to insert.
+ */
 function buildComment(input: BuildOptions): string {
 	const description = input.addDescription
 		? escapeAngle(input.existingDescription.trim() || 'no description yet')
@@ -404,7 +492,13 @@ function buildComment(input: BuildOptions): string {
 	return lines.join('\r\n');
 }
 
-/** Insert the new @component block, replacing any previous one and placing it before the first TS script. */
+/**
+ * Insert the new `@component` block, replacing any previous one and placing it before the first TS script.
+ *
+ * @param source - The original `.svelte` file contents.
+ * @param newComment - The freshly rendered `@component` block.
+ * @returns The updated source with the comment inserted at the desired location.
+ */
 function insertOrUpdateComment(source: string, newComment: string): string {
 	const headerRe = /<!--\s*@component[\s\S]*?-->\r\n/i;
 	const scriptOpen = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i;
@@ -426,10 +520,16 @@ function insertOrUpdateComment(source: string, newComment: string): string {
 	return newComment + '\r\n' + body;
 }
 
-/** Extract preserved free-form description from an existing @component block.
- *  If description is before props, we keep lines before '### Props'. If description
- *  is after props, we keep lines after the prop bullets (accounting for optional
- *  inherits line) up to the closing marker. Only this description region is preserved. */
+/**
+ * Extract preserved free-form description from an existing `@component` block.
+ *
+ * If the description is before props, lines before '### Props' are returned. If the description
+ * is after props, lines after the prop bullets (accounting for an optional inherits line) up to
+ * the closing marker are returned. Only this description region is preserved.
+ *
+ * @param raw - The raw HTML comment text that begins with `<!-- @component`.
+ * @returns The preserved description text (possibly empty) without the closing marker.
+ */
 function extractDescriptionFromComment(raw: string): string {
 	// Ensure we don't carry the comment close marker into the preserved text
 	const closeIdx = raw.lastIndexOf('-->');
@@ -465,3 +565,5 @@ function extractDescriptionFromComment(raw: string): string {
 	const desc = after.slice(i).join('\n');
 	return desc.replace(/<!--[\s\S]*?-->/g, '').trim();
 }
+
+//#endregion

@@ -5,7 +5,18 @@ src/**
 .yarnrc
 vsc-extension-quickstart.md
 **/tsconfig.json
-**/eslint.config.mjs
+**/eslint.config.js
 **/*.map
 **/*.ts
 **/.vscode-test.*
+
+# Ignore workspace files
+*.code-workspace
+
+# Ignore configs
+config
+pnpm-lock.yaml
+
+# Ignore coverage and test output
+coverage/
+**/test/
