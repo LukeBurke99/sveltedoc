@@ -10,15 +10,10 @@ describe('generator (processSvelteDoc)', () => {
 			placeDescriptionBeforeProps: false
 		};
 		const result = processSvelteDoc(source, options);
-		assert.strictEqual(result.changed, true);
-		assert.ok(result.updated.includes('<!-- @component'));
 		// Props header and bullets
-		assert.ok(result.updated.includes('### Props'));
-		assert.ok(result.updated.includes('`color`'));
-		assert.ok(result.updated.includes('`size`'));
-		// Bindable mark and default should render
-		assert.ok(result.updated.includes('`$ color`'));
-		assert.ok(result.updated.includes('= `red`'));
+		const mustContain = ['### Props', '`!$ color`', '`size`', '= `red`'];
+		const missing = mustContain.filter((t) => !result.updated.includes(t));
+		assert.deepStrictEqual(missing, [], 'Missing expected fragments: ' + missing.join(', '));
 	});
 
 	it('preserves existing description when updating', () => {

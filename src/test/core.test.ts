@@ -24,16 +24,18 @@ describe('core helpers', () => {
 		assert.strictEqual(isQuote('"'), true);
 		assert.strictEqual(isQuote("'"), true);
 		assert.strictEqual(isQuote('`'), true);
-		assert.strictEqual(isQuote('a' as any), false);
-		assert.strictEqual(isQuote(' ' as any), false);
+		assert.strictEqual(isQuote('a'), false);
+		assert.strictEqual(isQuote(' '), false);
 	});
 
+	// simulate the extraction of the type information
 	it('splitOnce splits only on the first delimiter', () => {
 		assert.deepStrictEqual(splitOnce('a=b=c', '='), ['a', 'b=c']);
 		assert.deepStrictEqual(splitOnce('abc', '='), ['abc', undefined]);
 		assert.deepStrictEqual(splitOnce('key: value: more', ': '), ['key', 'value: more']);
 	});
 
+	// simulate the extraction of inherited/union types
 	it('splitTopLevel respects nesting and quotes', () => {
 		const input = 'A<string, B<C>>, "x,y", D & E<F, G[]>'; // commas at top level should split into 3
 		const parts = splitTopLevel(input, ',');
@@ -50,17 +52,32 @@ describe('core helpers', () => {
 		);
 	});
 
+	//
 	it('scanToTopLevelSemicolon finds the semicolon after a complex type alias', () => {
-		const code = `\n// before\nexport type P = { a: string; b: Array<"x;y">; c: { nested: 1; } } /*comment*/ ;\nlet y = 1;`;
+		const code = `// before
+		export type P = {
+			a: string; // another comment
+			b: Array<"x;y">;
+			c: { nested: 1; }
+			d: (x: number) => void;
+			e: Snippet<[boolean]>;
+		} /* comment */ ;
+		let y = 1;`;
 		const start = code.indexOf('=') + 1; // scan from after '='
 		const idx = scanToTopLevelSemicolon(code, start);
 		assert.ok(idx > start, 'should find a semicolon after the alias');
 		assert.strictEqual(code[idx], ';');
+
 		// Ensure it picked the top-level one (after the closing brace), not inside strings/comments
 		const rhs = code.slice(start, idx).trim();
-		assert.ok(rhs.startsWith('{') && rhs.endsWith('} /*comment*/'));
+		assert.ok(rhs.startsWith('{') && rhs.endsWith('} /* comment */'));
+
+		// Shouldn't find a semicolon
+		const idx2 = scanToTopLevelSemicolon(' ', 0);
+		assert.strictEqual(idx2, -1);
 	});
 
+	// simulates checking for Propery type/interface based on the user's settings
 	it('wildcardToRegex matches with * across any characters (including slashes)', () => {
 		const re1 = wildcardToRegex('Foo*');
 		assert.ok(re1.test('Foobar'));

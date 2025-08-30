@@ -3,14 +3,28 @@ import { fileMatchesPath, globToRegex } from '../match';
 
 describe('path matching (match.ts)', () => {
 	it('globToRegex: * matches within a single segment, ** across segments', () => {
-		const single = new RegExp('^' + globToRegex('foo/*.svelte') + '$');
-		assert.ok(single.test('foo/Bar.svelte'));
-		assert.ok(single.test('foo/.svelte'));
+		const pat = 'foo/*.svelte';
+		const single = new RegExp('^' + globToRegex(pat) + '$');
+		assert.ok(
+			single.test('foo/Bar.svelte'),
+			`pattern ${pat} should match foo/Bar.svelte; got ${single.toString()}`
+		);
+		assert.ok(
+			single.test('foo/.svelte'),
+			`pattern ${pat} should match foo/.svelte; got ${single.toString()}`
+		);
 		assert.ok(!single.test('foo/bar/baz.svelte'));
 
-		const multi = new RegExp('^' + globToRegex('**/components/**/*.svelte') + '$');
-		assert.ok(multi.test('src/components/Button.svelte'));
-		assert.ok(multi.test('packages/ui/src/components/forms/Input.svelte'));
+		const pat2 = '**/components/**/*.svelte';
+		const multi = new RegExp('^' + globToRegex(pat2) + '$');
+		assert.ok(
+			multi.test('src/components/Button.svelte'),
+			`pattern ${pat2} => ${multi.toString()} should match src/components/Button.svelte`
+		);
+		assert.ok(
+			multi.test('packages/ui/src/components/forms/Input.svelte'),
+			`pattern ${pat2} => ${multi.toString()} should match nested path`
+		);
 		assert.ok(!multi.test('src/containers/Button.ts'));
 	});
 

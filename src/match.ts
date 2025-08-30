@@ -12,13 +12,16 @@ import { escapeRegExp } from './core';
  * @returns A regex source string suitable for constructing a RegExp.
  */
 export function globToRegex(glob: string): string {
-	// Protect ** so single-star handling won't affect it
+	// Protect **/ separately so we can allow zero segments after restoring
 	const DDSTAR = '\u0000';
-	let s = glob.replace(/\*\*/g, DDSTAR);
+	const DDSTAR_SLASH = '\u0001';
+	let s = glob.replace(/\*\*\//g, DDSTAR_SLASH).replace(/\*\*/g, DDSTAR);
 	// Escape all regex meta (including '?'), then reintroduce star semantics
 	s = escapeRegExp(s);
-	// Single * (escaped as \*) => any chars except '/'
+	// Single * (escaped as \\*) => any chars except '/'
 	s = s.replace(/\\\*/g, '[^/]*');
+	// Restore **/ => optional multi-segment including trailing slash
+	s = s.replace(new RegExp(DDSTAR_SLASH, 'g'), '(?:.*\\/)?');
 	// Restore ** => any chars, including '/'
 	s = s.replace(new RegExp(DDSTAR, 'g'), '.*');
 	return s;

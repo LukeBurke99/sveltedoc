@@ -54,7 +54,6 @@ export function processSvelteDoc(
 	});
 
 	const updated = insertOrUpdateComment(source, newComment);
-	console.log('Updated comment:', updated);
 	const changed = updated !== source;
 	log.push(
 		'Props extracted: ' +
