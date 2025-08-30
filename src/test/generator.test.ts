@@ -130,26 +130,38 @@ describe('generator (processSvelteDoc)', () => {
 
 	// Check we can still match when there is no destructing going on for some reason and falling back to the propertyNameMatch setting
 	it('falls back to propertyNameMatch when no destructuring', () => {
-		const source = `<script>
-		type SomeRandomProps = {
-			a?: string;
-			b?: number;
-		};
-		</script><div>No destructing here</div>`;
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: false,
 			placeDescriptionBeforeProps: false
 		};
-		const r = processSvelteDoc(source, options);
-		console.log(r.updated);
+		const source1 = `<script>
+		type SomeRandomProps = {
+			a?: string;
+			b?: number;
+		};
+		</script><div>No destructing here</div>`;
+		const source2 = `<script>
+		interface SomeRandomProps {
+			a?: string;
+			b?: number;
+		};
+		</script><div>No destructing here</div>`;
+		const r1 = processSvelteDoc(source1, options);
+		const r2 = processSvelteDoc(source2, options);
 
 		const mustContain = ['`a` **string**', '`b` **number**'];
-		const missing = mustContain.filter((t) => !r.updated.includes(t));
+		const missing1 = mustContain.filter((t) => !r1.updated.includes(t));
+		const missing2 = mustContain.filter((t) => !r2.updated.includes(t));
 		assert.deepStrictEqual(
-			missing,
+			missing1,
 			[],
-			'Missing expected fragments for type: ' + missing.join(', ')
+			'Missing expected fragments for type: ' + missing1.join(', ')
+		);
+		assert.deepStrictEqual(
+			missing2,
+			[],
+			'Missing expected fragments for interface: ' + missing2.join(', ')
 		);
 	});
 
@@ -157,8 +169,9 @@ describe('generator (processSvelteDoc)', () => {
 	it('preserves existing description when updating', () => {
 		const initial = `<!-- @component
 This is my description.
---><script lang="ts">
-    type XProps = { a: string };
+-->
+<script lang="ts">
+    type XProps = { a: string; b?: number };
     const { a = 'x' }: XProps = $props();
 </script>`;
 		const options: ProcessOptions = {
@@ -169,6 +182,32 @@ This is my description.
 		const out = processSvelteDoc(initial, options);
 		assert.strictEqual(out.changed, true);
 		assert.ok(out.updated.includes('This is my description.'));
+		assert.ok(out.updated.includes('`! a` **string** = `x`'));
+	});
+
+	// Moved description underneath props and updates props
+	it('move existing description underneath props', () => {
+		const initial = `<!-- @component
+This is my description.
+### Props
+#### Inherits: \`incorrect inherit needs removing\`
+- \`! a\` **string** = \`x\`
+-->
+<script lang="ts">
+    type XProps = { a: string; b?: number };
+    const { a = 'x' }: XProps = $props();
+</script>`;
+		const options: ProcessOptions = {
+			propertyNameMatch: ['*Props'],
+			addDescription: true,
+			placeDescriptionBeforeProps: false
+		};
+		const out = processSvelteDoc(initial, options);
+		assert.strictEqual(out.changed, true);
+		assert.ok(out.updated.includes('`! a` **string** = `x`'));
+		assert.ok(out.updated.includes('`b` **number**'));
+		assert.ok(out.updated.includes('This is my description.'));
+		assert.ok(!out.updated.includes('incorrect inherit'));
 	});
 
 	it('skips when no TS <script> present', () => {

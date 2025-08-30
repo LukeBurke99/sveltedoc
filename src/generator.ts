@@ -83,12 +83,13 @@ function extractScriptsAndLeadingComment(source: string): {
 	leadingComment?: { raw: string; description: string };
 } {
 	const scripts: string[] = [];
-	const scriptRegex = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>([\s\S]*?)<\/script>/gi;
+	// Match any <script ...>...</script>, allowing quoted attributes that may contain '>'
+	const scriptRegex = /<script\b(?:[^>"']|"[^"]*"|'[^']*')*>([\s\S]*?)<\/script>/gi;
 	let m: RegExpExecArray | null;
 	while ((m = scriptRegex.exec(source)) !== null) scripts.push(m[1]);
 
-	// Head before first TS script
-	const firstScriptIdx = source.search(/<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i);
+	// Head before first script of any kind
+	const firstScriptIdx = source.search(/<script\b(?:[^>"']|"[^"]*"|'[^']*')*>/i);
 	const head = firstScriptIdx === -1 ? source : source.slice(0, firstScriptIdx);
 	let leadingComment: { raw: string; description: string } | undefined;
 	const compMatch = /<!--\s*@component[\s\S]*?-->\s*$/i.exec(head.trimStart());
@@ -338,7 +339,7 @@ function parseTypeMembers(
 ): { name: string; typeText: string; optional: boolean; description?: string }[] {
 	const members: { name: string; typeText: string; optional: boolean; description?: string }[] =
 		[];
-	const propRe = /(\/\*\*[\s\S]*?\*\/)??\s*([A-Za-z_][\w]*)\s*(\?)?\s*:\s*([^;]+);/g;
+	const propRe = /(\/\*\*[\s\S]*?\*\/)??\s*([A-Za-z_][\w]*)\s*(\?)?\s*:\s*([^;]+);?/g;
 	let m: RegExpExecArray | null;
 	while ((m = propRe.exec(membersText)) !== null) {
 		const jsdoc = m[1] ? m[1] : undefined;
@@ -499,8 +500,9 @@ function buildComment(input: BuildOptions): string {
  * @returns The updated source with the comment inserted at the desired location.
  */
 function insertOrUpdateComment(source: string, newComment: string): string {
-	const headerRe = /<!--\s*@component[\s\S]*?-->\r\n/i;
-	const scriptOpen = /<script\s+[^>]*lang\s*=\s*["']ts["'][^>]*>/i;
+	const headerRe = /<!--\s*@component[\s\S]*?-->\r?\n/i;
+	// Match any <script ...> opening tag robustly
+	const scriptOpen = /<script\b(?:[^>"']|"[^"]*"|'[^']*')*>/i;
 
 	// Remove any existing @component header by slicing exactly its range
 	let body = source;
