@@ -29,7 +29,6 @@
 		"auto-generate",
 		"generator",
 		"props",
-		"$props",
 		"bindable",
 		"component-props",
 		"prop-types",
