@@ -119,7 +119,8 @@
 			"src/**/*.ts"
 		],
 		"exclude": [
-			"src/test/**"
+			"src/test/**",
+			"src/types.ts"
 		],
 		"reporter": [
 			"text",
