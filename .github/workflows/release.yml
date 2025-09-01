@@ -13,10 +13,10 @@ permissions:
 
 jobs:
     release:
+        # Skip running if the commit message indicates it's an automated release commit
+        if: ${{ !contains(github.event.head_commit.message, 'chore(release)') }}
         # Use the latest Ubuntu runner
         runs-on: ubuntu-latest
-        # Skip running if the commit message indicates it's an automated release commit
-        if: "!contains(github.event.head_commit.message, 'chore(release)')"
 
         steps:
             - name: Checkout
@@ -33,7 +33,7 @@ jobs:
                   node-version: '20'
 
             - name: Install pnpm
-              # Set up pnpm package manager (ensure version matches your project constraints)
+              # Set up pnpm package manager
               uses: pnpm/action-setup@v2
 
             - name: Install dependencies
