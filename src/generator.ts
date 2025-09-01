@@ -26,7 +26,7 @@ export function processSvelteDoc(
 	const log: string[] = [];
 	// Skip if there is no <script> tag at all
 	if (!/<script\b/i.test(source)) {
-		log.push('No <script> tag found — skipping doc block');
+		log.push('No <script> tag found - skipping doc block');
 		return { updated: source, changed: false, log };
 	}
 	const {
@@ -41,7 +41,7 @@ export function processSvelteDoc(
 
 	// If no props and no inherits, and title/desc disabled, do nothing
 	if (!options.addDescription && extract.props.length === 0 && extract.inherits.length === 0) {
-		log.push('No props/inherits and title/description disabled — skipping doc block');
+		log.push('No props/inherits and title/description disabled - skipping doc block');
 		return { updated: source, changed: false, log };
 	}
 
@@ -337,19 +337,190 @@ function findInterfaceBlock(
 function parseTypeMembers(
 	membersText: string
 ): { name: string; typeText: string; optional: boolean; description?: string }[] {
-	const members: { name: string; typeText: string; optional: boolean; description?: string }[] =
-		[];
-	const propRe = /(\/\*\*[\s\S]*?\*\/)??\s*([A-Za-z_][\w]*)\s*(\?)?\s*:\s*([^;]+);?/g;
-	let m: RegExpExecArray | null;
-	while ((m = propRe.exec(membersText)) !== null) {
-		const jsdoc = m[1] ? m[1] : undefined;
-		const name = m[2];
-		const optional = Boolean(m[3]);
-		const typeText = m[4].trim();
-		const description = jsdoc ? extractJsDocSummary(jsdoc) : undefined;
-		members.push({ name, typeText, optional, description });
+	const out: { name: string; typeText: string; optional: boolean; description?: string }[] = [];
+
+	// Remove // and /* */ comments from a type snippet, preserving string contents
+	function removeTypeComments(s: string): string {
+		let out = '';
+		let inString: '"' | "'" | '`' | null = null;
+		let inLine = false;
+		let inBlock = false;
+		for (let j = 0; j < s.length; j++) {
+			const ch = s[j];
+			const next = j + 1 < s.length ? s[j + 1] : '';
+			const prev = j > 0 ? s[j - 1] : '';
+			if (inLine) {
+				if (ch === '\n') {
+					inLine = false;
+					out += ch;
+				}
+				continue;
+			}
+			if (inBlock) {
+				if (ch === '*' && next === '/') {
+					inBlock = false;
+					j++; // consume '/'
+				}
+				continue;
+			}
+			if (inString) {
+				out += ch;
+				if (ch === inString && prev !== '\\') inString = null;
+				continue;
+			}
+			if (ch === '"' || ch === "'" || ch === '`') {
+				inString = ch as any;
+				out += ch;
+				continue;
+			}
+			if (ch === '/' && next === '/') {
+				inLine = true;
+				j++; // skip second '/'
+				continue;
+			}
+			if (ch === '/' && next === '*') {
+				inBlock = true;
+				j++; // skip '*'
+				continue;
+			}
+			out += ch;
+		}
+		return out;
 	}
-	return members;
+
+	// We implement a small scanner that walks the text, capturing optional JSDoc,
+	// then an identifier, optional '?', ':', and then a type segment that can include
+	// nested {}, (), [], <> and strings, ending at the next top-level ';'.
+	let i = 0;
+	const n = membersText.length;
+	function skipWs(): void {
+		while (i < n && /\s/.test(membersText[i])) i++;
+	}
+	function readJsDoc(): string | undefined {
+		skipWs();
+		if (membersText.startsWith('/**', i)) {
+			const start = i;
+			i += 3;
+			while (i < n && !membersText.startsWith('*/', i)) i++;
+			if (i < n) i += 2; // consume */
+			return membersText.slice(start, i);
+		}
+		return undefined;
+	}
+	while (i < n) {
+		const jsdoc = readJsDoc();
+		skipWs();
+		// Read identifier
+		const idStart = i;
+		while (i < n && /[A-Za-z0-9_]/.test(membersText[i])) i++;
+		if (i === idStart) {
+			// Not an identifier; advance one char to avoid infinite loop
+			i++;
+			continue;
+		}
+		const name = membersText.slice(idStart, i);
+		skipWs();
+		let optional = false;
+		if (membersText[i] === '?') {
+			optional = true;
+			i++;
+			skipWs();
+		}
+		if (membersText[i] !== ':') {
+			// Not a prop signature; skip to next semicolon
+			while (i < n && membersText[i] !== ';') i++;
+			if (i < n) i++;
+			continue;
+		}
+		i++; // skip ':'
+		skipWs();
+		// Read type until next top-level ';'
+		let depthParens = 0,
+			depthBraces = 0,
+			depthBrackets = 0,
+			depthAngles = 0;
+		let inString: '"' | "'" | '`' | null = null;
+		const startType = i;
+		let captured = false;
+		for (; i < n; i++) {
+			const ch = membersText[i];
+			const next = i + 1 < n ? membersText[i + 1] : '';
+			const prev = i > 0 ? membersText[i - 1] : '';
+			if (inString) {
+				if (ch === inString && prev !== '\\') inString = null;
+				continue;
+			}
+			if (ch === '"' || ch === "'" || ch === '`') {
+				inString = ch as any;
+				continue;
+			}
+			if (ch === '/' && next === '/') {
+				// line comment inside type; consume to newline
+				i += 2;
+				while (i < n && membersText[i] !== '\n') i++;
+				continue;
+			}
+			if (ch === '/' && next === '*') {
+				// block comment inside type
+				i += 2;
+				while (i + 1 < n && !(membersText[i] === '*' && membersText[i + 1] === '/')) i++;
+				if (i + 1 < n) i += 2;
+				continue;
+			}
+			switch (ch) {
+				case '(':
+					depthParens++;
+					break;
+				case ')':
+					depthParens = Math.max(0, depthParens - 1);
+					break;
+				case '{':
+					depthBraces++;
+					break;
+				case '}':
+					depthBraces = Math.max(0, depthBraces - 1);
+					break;
+				case '[':
+					depthBrackets++;
+					break;
+				case ']':
+					depthBrackets = Math.max(0, depthBrackets - 1);
+					break;
+				case '<':
+					depthAngles++;
+					break;
+				case '>':
+					depthAngles = Math.max(0, depthAngles - 1);
+					break;
+				case ';':
+					if (
+						depthParens === 0 &&
+						depthBraces === 0 &&
+						depthBrackets === 0 &&
+						depthAngles === 0
+					) {
+						const typeText = removeTypeComments(membersText.slice(startType, i)).trim();
+						const description = jsdoc ? extractJsDocSummary(jsdoc) : undefined;
+						out.push({ name, typeText, optional, description });
+						i++; // consume ';'
+						captured = true;
+					}
+					break;
+				default:
+					break;
+			}
+			if (captured) break; // break out of for-loop when we've captured the type
+		}
+		// If we reached the end without a terminating semicolon, capture till end
+		if (!captured && i >= n) {
+			const typeText = removeTypeComments(membersText.slice(startType))
+				.trim()
+				.replace(/;$/, '');
+			const description = jsdoc ? extractJsDocSummary(jsdoc) : undefined;
+			out.push({ name, typeText, optional, description });
+		}
+	}
+	return out;
 }
 
 /**
@@ -461,7 +632,7 @@ function buildComment(input: BuildOptions): string {
 		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText, false)), '**');
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
 		const defaultPart = defaultVal ? ` = ${wrapCode(escapeAngle(defaultVal))}` : '';
-		const desc = p.description ? ` — ${sanitizeInline(stripRequiredHint(p.description))}` : '';
+		const desc = p.description ? ` - ${sanitizeInline(stripRequiredHint(p.description))}` : '';
 		return `- ${wrapCode(namePart)} ${typePart}${defaultPart}${desc}`;
 	});
 

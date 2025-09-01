@@ -233,4 +233,52 @@ This is my description.
 		assert.strictEqual(r.changed, false);
 		assert.strictEqual(r.updated, source);
 	});
+
+	// Regression: multiline inline object type should not be exploded into separate props
+	it('handles multiline inline object prop correctly', () => {
+		const source = `<script lang="ts">
+		import type { HTMLAttributes } from 'svelte/elements';
+
+		type Props = HTMLAttributes<HTMLDivElement> & {
+			/**
+			 * The configuration for the component.
+			 */
+			config: {
+				/** The title of the config */
+				title: string; // what will happen with this comment
+				icon?: string; /* what will this do */
+				click?: () => void;
+			};
+			color: 'primary' | 'secondary' | 'tertiary'; /** This is on color line but will be a comment for the frogs property */
+			frogs?: number; // inline comment
+		};
+		let {
+			config = { title: 'Save', icon: 'floppy-disk', click: () => {} },
+			color = 'primary'
+		}: Props = $props();
+	</script>`;
+
+		const options: ProcessOptions = {
+			propertyNameMatch: ['*Props'],
+			addDescription: false,
+			placeDescriptionBeforeProps: false
+		};
+
+		const out = processSvelteDoc(source, options);
+		// Must include expected items
+		const mustContain = [
+			'<!-- @component',
+			'### Props',
+			'#### Inherits: `HTMLAttributes◄HTMLDivElement►`',
+			"- `! color` **'primary' | 'secondary' | 'tertiary'** = `primary`",
+			"- `! config` **{ title: string; icon?: string; click?: () =► void; }** = `{ title: 'Save', icon: 'floppy-disk', click: () =► {} }` - The configuration for the component."
+		];
+
+		const missing = mustContain.filter((t) => !out.updated.includes(t));
+		assert.deepStrictEqual(missing, [], 'Missing expected fragments: ' + missing.join(', '));
+		// Must not explode nested members into separate props
+		assert.ok(!out.updated.includes('\n- `! title`'));
+		assert.ok(!out.updated.includes('\n- `icon` **string**'));
+		assert.ok(!out.updated.includes('\n- `click` **() =► void**'));
+	});
 });
