@@ -44,7 +44,7 @@
 		[
 			"@semantic-release/git",
 			{
-				"assets": ["package.json", "package-lock.json", "CHANGELOG.md"],
+				"assets": ["package.json", "CHANGELOG.md"],
 				"message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
 			}
 		],
@@ -58,7 +58,7 @@
 		[
 			"@semantic-release/exec",
 			{
-				"publishCmd": "vsce publish --pat ${VSCE_PAT}"
+				"publishCmd": "VSCE_PAT=$VSCE_PAT vsce publish --pat $VSCE_PAT"
 			}
 		]
 	]
