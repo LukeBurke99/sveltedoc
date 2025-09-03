@@ -588,7 +588,12 @@ function normalizeDefaultForDisplay(defaultText: string | undefined): string | u
 	const bindMatch = /\$bindable\s*\(([\s\S]*)\)\s*/.exec(trimmed);
 	const core = bindMatch ? bindMatch[1].trim() : trimmed;
 	const str = /^(?:['"`])(.*)(?:['"`])$/.exec(core);
-	return str ? str[1] : core;
+	if (str) return str[1];
+	// Collapse newlines/indentation and excess spaces for readable inline display
+	return core
+		.replace(/\r?\n\s*/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
 }
 
 /**

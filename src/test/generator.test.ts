@@ -253,7 +253,11 @@ This is my description.
 			frogs?: number; // inline comment
 		};
 		let {
-			config = { title: 'Save', icon: 'floppy-disk', click: () => {} },
+			config = {
+				title: 'Save',
+				icon: 'floppy-disk',
+				click: () => {}
+			},
 			color = 'primary'
 		}: Props = $props();
 	</script>`;
@@ -271,7 +275,8 @@ This is my description.
 			'### Props',
 			'#### Inherits: `HTMLAttributes◄HTMLDivElement►`',
 			"- `! color` **'primary' | 'secondary' | 'tertiary'** = `primary`",
-			"- `! config` **{ title: string; icon?: string; click?: () =► void; }** = `{ title: 'Save', icon: 'floppy-disk', click: () =► {} }` - The configuration for the component."
+			"- `! config` **{ title: string; icon?: string; click?: () =► void; }** = `{ title: 'Save', icon: 'floppy-disk', click: () =► {} }` - The configuration for the component.",
+			'-->'
 		];
 
 		const missing = mustContain.filter((t) => !out.updated.includes(t));
@@ -280,5 +285,21 @@ This is my description.
 		assert.ok(!out.updated.includes('\n- `! title`'));
 		assert.ok(!out.updated.includes('\n- `icon` **string**'));
 		assert.ok(!out.updated.includes('\n- `click` **() =► void**'));
+
+		// Fake save: run the generator again on the updated content and ensure the doc block is compact
+		const out2 = processSvelteDoc(out.updated, options);
+		const docStart = out2.updated.indexOf('<!-- @component');
+		const docEnd = out2.updated.indexOf('-->', docStart);
+		assert.ok(docStart !== -1 && docEnd !== -1, 'Doc block not found after second pass');
+		const docBlock = out2.updated.slice(docStart, docEnd).replace(/\r\n/g, '\n').trim();
+		const lines = docBlock.split('\n');
+		assert.strictEqual(
+			lines.length,
+			6,
+			'Expected 6 lines in doc block after second pass, got ' +
+				String(lines.length) +
+				':\n' +
+				docBlock
+		);
 	});
 });
