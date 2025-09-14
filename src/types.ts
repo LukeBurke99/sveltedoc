@@ -48,6 +48,8 @@ export type BuildOptions = {
 	inherits: string[];
 	/** props to render as bullets */
 	props: PropDoc[];
+	/** whether to escape angle brackets (< >) with placeholder characters */
+	escapeAngleBrackets: boolean;
 };
 
 /**
@@ -60,4 +62,6 @@ export type ProcessOptions = {
 	addDescription: boolean;
 	/** placement of description relative to props */
 	placeDescriptionBeforeProps: boolean;
+	/** whether to escape angle brackets (< >) with placeholder characters */
+	escapeAngleBrackets: boolean;
 };

@@ -109,6 +109,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "If true, place the description before the Props section; otherwise, place it after."
+				},
+				"sveltedoc.escapeAngleBrackets": {
+					"type": "boolean",
+					"default": true,
+					"description": "IMPORTANT: Enable this to fix formatting issues with other extensions (e.g. Auto Rename Tag). Escapes angle brackets (< >) in documentation with visible placeholder characters."
 				}
 			}
 		}

@@ -98,7 +98,8 @@ describe('generator (processSvelteDoc)', () => {
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: true,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 		const typeResult = processSvelteDoc(FULL_COMPONENT_WITH_TYPE, options);
 		const interfaceResult = processSvelteDoc(FULL_COMPONENT_WITH_INTERFACE, options);
@@ -134,7 +135,8 @@ describe('generator (processSvelteDoc)', () => {
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: false,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 		const source1 = `<script>
 		type SomeRandomProps = {
@@ -178,7 +180,8 @@ This is my description.
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: true,
-			placeDescriptionBeforeProps: true
+			placeDescriptionBeforeProps: true,
+			escapeAngleBrackets: true
 		};
 		const out = processSvelteDoc(initial, options);
 		assert.strictEqual(out.changed, true);
@@ -201,7 +204,8 @@ This is my description.
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: true,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 		const out = processSvelteDoc(initial, options);
 		assert.strictEqual(out.changed, true);
@@ -216,7 +220,8 @@ This is my description.
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: false,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 		const r = processSvelteDoc(source, options);
 		assert.strictEqual(r.changed, false);
@@ -228,7 +233,8 @@ This is my description.
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: false,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 		const r = processSvelteDoc(source, options);
 		assert.strictEqual(r.changed, false);
@@ -266,7 +272,8 @@ This is my description.
 		const options: ProcessOptions = {
 			propertyNameMatch: ['*Props'],
 			addDescription: false,
-			placeDescriptionBeforeProps: false
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
 		};
 
 		const out = processSvelteDoc(source, options);
@@ -301,6 +308,61 @@ This is my description.
 				String(lines.length) +
 				':\n' +
 				docBlock
+		);
+	});
+
+	it('respects escapeAngleBrackets setting', () => {
+		const source = `<script lang="ts">
+		type TestProps = {
+			/** Test comment with <brackets> and more <tags>. */
+			test?: string;
+		};
+		const { test }: TestProps = $props();
+	</script>`;
+
+		// Test with escaping enabled (default)
+		const optionsWithEscaping: ProcessOptions = {
+			propertyNameMatch: ['*Props'],
+			addDescription: false,
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
+		};
+		const resultWithEscaping = processSvelteDoc(source, optionsWithEscaping);
+
+		// Test with escaping disabled
+		const optionsWithoutEscaping: ProcessOptions = {
+			propertyNameMatch: ['*Props'],
+			addDescription: false,
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: false
+		};
+		const resultWithoutEscaping = processSvelteDoc(source, optionsWithoutEscaping);
+
+		// When escaping is enabled, should contain escaped brackets
+		assert.ok(
+			resultWithEscaping.updated.includes('◄brackets►'),
+			'Should contain escaped angle brackets when escaping is enabled'
+		);
+		assert.ok(
+			resultWithEscaping.updated.includes('◄tags►'),
+			'Should escape all angle brackets when escaping is enabled'
+		);
+
+		// When escaping is disabled, should contain original brackets
+		assert.ok(
+			resultWithoutEscaping.updated.includes('<brackets>'),
+			'Should preserve original angle brackets when escaping is disabled'
+		);
+		assert.ok(
+			resultWithoutEscaping.updated.includes('<tags>'),
+			'Should preserve all angle brackets when escaping is disabled'
+		);
+
+		// Should not contain escaped brackets when escaping is disabled
+		assert.ok(
+			!resultWithoutEscaping.updated.includes('◄') &&
+				!resultWithoutEscaping.updated.includes('►'),
+			'Should not contain any escaped brackets when escaping is disabled'
 		);
 	});
 });

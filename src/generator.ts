@@ -50,7 +50,8 @@ export function processSvelteDoc(
 		placeDescriptionBeforeProps: options.placeDescriptionBeforeProps,
 		existingDescription: leadingComment?.description ?? '',
 		inherits: extract.inherits,
-		props: extract.props
+		props: extract.props,
+		escapeAngleBrackets: options.escapeAngleBrackets
 	});
 
 	const updated = insertOrUpdateComment(source, newComment);
@@ -559,10 +560,11 @@ function sanitizeInline(text: string, replaceApos: boolean = true): string {
  * Escape angle brackets in plain text (not code spans) using visible placeholder characters.
  *
  * @param text - The input text that may contain `<` or `>` characters.
- * @returns The text with `<` replaced by `◄` and `>` replaced by `►`.
+ * @param shouldEscape - Whether to actually perform the escaping.
+ * @returns The text with `<` replaced by `◄` and `>` replaced by `►` if shouldEscape is true, otherwise unchanged.
  */
-function escapeAngle(text: string): string {
-	return text.replace(/</g, '◄').replace(/>/g, '►');
+function escapeAngle(text: string, shouldEscape: boolean): string {
+	return shouldEscape ? text.replace(/</g, '◄').replace(/>/g, '►') : text;
 }
 
 /**
@@ -618,13 +620,16 @@ function stripRequiredHint(text: string): string {
  */
 function buildComment(input: BuildOptions): string {
 	const description = input.addDescription
-		? escapeAngle(input.existingDescription.trim() || 'no description yet')
+		? escapeAngle(
+				input.existingDescription.trim() || 'no description yet',
+				input.escapeAngleBrackets
+			)
 		: '';
 
 	const inheritsLine =
 		input.inherits.length > 0
 			? `#### Inherits: ${input.inherits
-					.map((t) => wrapCode(escapeAngle(t.trim())))
+					.map((t) => wrapCode(escapeAngle(t.trim(), input.escapeAngleBrackets)))
 					.join(' & ')}`
 			: '';
 
@@ -634,11 +639,16 @@ function buildComment(input: BuildOptions): string {
 		const bindMark = p.bindable ? '$' : '';
 		const modifier = `${requiredMark}${bindMark}`;
 		const namePart = `${modifier}${modifier ? ' ' : ''}${p.name}`.trim();
-		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText, false)), '**');
+		const typePart = wrapCode(
+			escapeAngle(sanitizeInline(p.typeText, false), input.escapeAngleBrackets),
+			'**'
+		);
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
-		const defaultPart = defaultVal ? ` = ${wrapCode(escapeAngle(defaultVal))}` : '';
+		const defaultPart = defaultVal
+			? ` = ${wrapCode(escapeAngle(defaultVal, input.escapeAngleBrackets))}`
+			: '';
 		const desc = p.description
-			? ` - ${escapeAngle(sanitizeInline(stripRequiredHint(p.description), false))}`
+			? ` - ${escapeAngle(sanitizeInline(stripRequiredHint(p.description), false), input.escapeAngleBrackets)}`
 			: '';
 		return `- ${wrapCode(namePart)} ${typePart}${defaultPart}${desc}`;
 	});

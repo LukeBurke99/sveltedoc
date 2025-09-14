@@ -54,6 +54,11 @@ While SvelteDoc works out of the box and is configured for the most productive s
 5. `sveltedoc.placeDescriptionBeforeProps` (boolean, default: **false**)
 	- Whether to place the description before or after the props section.
 
+6. `sveltedoc.escapeAngleBrackets` (boolean, default: **true**)
+	- **IMPORTANT**: Enable this to fix formatting issues with other extensions (e.g. Auto Rename Tag).
+	- When enabled, escapes angle brackets (`<` `>`) in documentation with visible placeholder characters (`◄` `►`).
+	- This prevents conflicts with HTML parsing in VS Code's markdown renderer and other extensions.
+
 ## File matching guide
 
 The extension runs on save only for files whose path matches your `sveltedoc.filesToDocument` patterns.

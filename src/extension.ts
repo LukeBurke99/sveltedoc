@@ -56,11 +56,13 @@ export function activate(context: vscode.ExtensionContext): void {
 			'placeDescriptionBeforeProps',
 			cfg.get<boolean>('placeTitleBeforeProps', true)
 		);
+		const escapeAngleBrackets = cfg.get<boolean>('escapeAngleBrackets', true);
 
 		const options: ProcessOptions = {
 			propertyNameMatch,
 			addDescription,
-			placeDescriptionBeforeProps
+			placeDescriptionBeforeProps,
+			escapeAngleBrackets
 		};
 
 		const start = Date.now();
@@ -94,11 +96,13 @@ async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promis
 		'placeDescriptionBeforeProps',
 		cfg.get<boolean>('placeTitleBeforeProps', true)
 	);
+	const escapeAngleBrackets = cfg.get<boolean>('escapeAngleBrackets', true);
 
 	const options: ProcessOptions = {
 		propertyNameMatch,
 		addDescription,
-		placeDescriptionBeforeProps
+		placeDescriptionBeforeProps,
+		escapeAngleBrackets
 	};
 
 	const start = Date.now();
