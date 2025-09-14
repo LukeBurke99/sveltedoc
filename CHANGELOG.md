@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.4...v1.0.5) (2025-09-14)
+
+### 🐛 Bug Fixes
+
+* Enhance description formatting in generated comments and tests. ([74bbe4a](https://github.com/LukeBurke99/sveltedoc/commit/74bbe4a4ee1e7ad5c1fbad7ce9ea558621a399bd)), closes [#2](https://github.com/LukeBurke99/sveltedoc/issues/2)
+
 ## [1.0.4](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.3...v1.0.4) (2025-09-03)
 
 ### 🐛 Bug Fixes

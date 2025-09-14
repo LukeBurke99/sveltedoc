@@ -3,7 +3,7 @@
 	"publisher": "burke-development",
 	"displayName": "SvelteDoc",
 	"description": "Automatically generate and maintain documentation for your Svelte components, right inside VS Code.",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"icon": "images/logo/512.png",
 	"galleryBanner": {
 		"theme": "dark",
