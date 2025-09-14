@@ -28,7 +28,7 @@ const FULL_COMPONENT_WITH_TYPE = `<script lang="ts">
 		tooltipDelay?: number;
 		/** A callback function for when the button is clicked. */
 		onClick?: (event?: MouseEvent) => void;
-		/** The content to display inside the button. Passes in 'loading' variable */
+		/** The content to display inside the button. Passes in 'loading' variable. Let's see what happens when we start using \`<brackets>\` inside ticks and <outside>. */
 		extraContent?: Snippet<[boolean]>;
 	};
 	let {
@@ -71,7 +71,7 @@ const FULL_COMPONENT_WITH_INTERFACE = `<script lang="ts">
 		tooltipDelay?: number;
 		/** A callback function for when the button is clicked. */
 		onClick?: (event?: MouseEvent) => void;
-		/** The content to display inside the button. Passes in 'loading' variable */
+		/** The content to display inside the button. Passes in 'loading' variable. Let's see what happens when we start using \`<brackets>\` inside ticks and <outside>. */
 		extraContent?: Snippet<[boolean]>;
 	};
 	let {
@@ -112,7 +112,8 @@ describe('generator (processSvelteDoc)', () => {
 			'- `!$ loading` **boolean**',
 			'- `extraContent` **Snippet◄[boolean]►**',
 			'- `onClick` **(event?: MouseEvent) =► void**',
-			'`tooltipDelay` **number** = `500`'
+			'`tooltipDelay` **number** = `500`',
+			`Let's see what happens when we start using \`◄brackets►\` inside ticks and ◄outside►.`
 		];
 		const typeMissing = mustContain.filter((t) => !typeResult.updated.includes(t));
 		const interfaceMissing = mustContain.filter((t) => !interfaceResult.updated.includes(t));

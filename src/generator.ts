@@ -637,7 +637,9 @@ function buildComment(input: BuildOptions): string {
 		const typePart = wrapCode(escapeAngle(sanitizeInline(p.typeText, false)), '**');
 		const defaultVal = normalizeDefaultForDisplay(p.defaultText);
 		const defaultPart = defaultVal ? ` = ${wrapCode(escapeAngle(defaultVal))}` : '';
-		const desc = p.description ? ` - ${sanitizeInline(stripRequiredHint(p.description))}` : '';
+		const desc = p.description
+			? ` - ${escapeAngle(sanitizeInline(stripRequiredHint(p.description), false))}`
+			: '';
 		return `- ${wrapCode(namePart)} ${typePart}${defaultPart}${desc}`;
 	});
 
