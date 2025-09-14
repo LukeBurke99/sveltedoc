@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.3...v1.0.4) (2025-09-03)
+
+### 🐛 Bug Fixes
+
+* Improve display of default values. ([2e99c59](https://github.com/LukeBurke99/sveltedoc/commit/2e99c594359d68db0cc95c6d4a7436f561e4ae33))
+
 ## [1.0.3](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.2...v1.0.3) (2025-09-02)
 
 ### 🐛 Bug Fixes
