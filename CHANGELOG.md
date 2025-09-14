@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.5...v1.1.0) (2025-09-14)
+
+### ✨ Features
+
+* Add escapeAngleBrackets option to handle angle bracket formatting in documentation ([c1f8a1d](https://github.com/LukeBurke99/sveltedoc/commit/c1f8a1dbff7bfc703f59a7575a63c4e60af2d579))
+
 ## [1.0.5](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.4...v1.0.5) (2025-09-14)
 
 ### 🐛 Bug Fixes
