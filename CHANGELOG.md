@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.1.0...v1.2.0) (2025-09-17)
+
+### ✨ Features
+
+* Add functionality to strip comments from code snippets in documentation processing. ([9bd070c](https://github.com/LukeBurke99/sveltedoc/commit/9bd070c9fb5e5a1f6acddf1a8262f20c6e9d7141)), closes [#3](https://github.com/LukeBurke99/sveltedoc/issues/3)
+
 ## [1.1.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.0.5...v1.1.0) (2025-09-14)
 
 ### ✨ Features
