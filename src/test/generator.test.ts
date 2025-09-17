@@ -311,6 +311,7 @@ This is my description.
 		);
 	});
 
+	// Check that angle brackets in descriptions are escaped or not based on setting
 	it('respects escapeAngleBrackets setting', () => {
 		const source = `<script lang="ts">
 		type TestProps = {
@@ -363,6 +364,48 @@ This is my description.
 			!resultWithoutEscaping.updated.includes('◄') &&
 				!resultWithoutEscaping.updated.includes('►'),
 			'Should not contain any escaped brackets when escaping is disabled'
+		);
+	});
+
+	// Check that comments in descriptions are stripped out
+	it('comments are stripped out', () => {
+		const source = `<script lang="ts">
+		type Props = {
+			/** JSDoc comment that should stay. */
+			test?: string; /* multi-line comment that should be removed */
+		};
+		const {
+			test = 'some string' // single line comment that should be removed
+		}: Props = $props();
+	</script>`;
+
+		const options: ProcessOptions = {
+			propertyNameMatch: ['*Props'],
+			addDescription: false,
+			placeDescriptionBeforeProps: false,
+			escapeAngleBrackets: true
+		};
+		const result = processSvelteDoc(source, options);
+
+		// get the doc block content
+		const docStart = result.updated.indexOf('<!-- @component');
+		const docEnd = result.updated.indexOf('-->', docStart);
+		const docContent = result.updated.slice(docStart, docEnd + 3);
+
+		console.log(docContent);
+
+		// check the correct comments are present/absent
+		assert.ok(
+			docContent.includes('JSDoc comment that should stay'),
+			'Should contain JSDoc comment to describe the prop'
+		);
+		assert.ok(
+			!docContent.includes('multi-line comment that should be removed'),
+			'Should not contain multi-line comment'
+		);
+		assert.ok(
+			!docContent.includes('single line comment that should be removed'),
+			'Should not contain single line comment'
 		);
 	});
 });

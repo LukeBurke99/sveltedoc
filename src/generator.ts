@@ -122,6 +122,55 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 		debug: []
 	};
 
+	// Helper function to remove comments from code snippets
+	function removeCommentsFromCode(s: string): string {
+		let out = '';
+		let inString: '"' | "'" | '`' | null = null;
+		let inLine = false;
+		let inBlock = false;
+		for (let j = 0; j < s.length; j++) {
+			const ch = s[j];
+			const next = j + 1 < s.length ? s[j + 1] : '';
+			const prev = j > 0 ? s[j - 1] : '';
+			if (inLine) {
+				if (ch === '\n') {
+					inLine = false;
+					out += ch;
+				}
+				continue;
+			}
+			if (inBlock) {
+				if (ch === '*' && next === '/') {
+					inBlock = false;
+					j++; // consume '/'
+				}
+				continue;
+			}
+			if (inString) {
+				out += ch;
+				if (ch === inString && prev !== '\\') inString = null;
+				continue;
+			}
+			if (ch === '"' || ch === "'" || ch === '`') {
+				inString = ch as any;
+				out += ch;
+				continue;
+			}
+			if (ch === '/' && next === '/') {
+				inLine = true;
+				j++; // skip second '/'
+				continue;
+			}
+			if (ch === '/' && next === '*') {
+				inBlock = true;
+				j++; // skip '*'
+				continue;
+			}
+			out += ch;
+		}
+		return out;
+	}
+
 	// Find typed destructuring of $props
 	const destructMatch =
 		/(?:const|let|var)\s*{([\s\S]*?)}\s*:\s*([A-Za-z_]\w*)\s*(?:<[^>]*?>)?\s*=\s*\$props\s*\(/m.exec(
@@ -148,7 +197,7 @@ function extractDocsFromTS(tsCode: string, patterns: string[]): ExtractResult {
 			const [maybeName] = splitOnce(left.trim(), ':');
 			const name = maybeName.trim();
 			if (defaultRhs !== undefined) {
-				const def = defaultRhs.trim();
+				const def = removeCommentsFromCode(defaultRhs.trim());
 				defaults.set(name, def);
 				if (/\$bindable\s*\(/.test(def)) bindables.add(name);
 			}
