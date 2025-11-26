@@ -1,0 +1,4 @@
+This file is to house the config files within VS Code IDE.
+"explorer.fileNesting.patterns": {
+    "config": "*.config.ts, *.config.js, tsconfig.json, tsconfig.base.json, .npmrc, .prettierrc, .eslintcache, .vscodeignore, .vscode-test.mjs, .releaserc.json, .mocharc.json, .gitignore"
+},

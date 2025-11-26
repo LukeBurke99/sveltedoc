@@ -1,67 +1,140 @@
 /**
- * A single documented prop of a Svelte component.
- * - optional indicates presence of ? in the type alias.
- * - bindable is true when a default is created using $bindable(...).
+ * Component property information extracted from Svelte files.
+ * Represents a single prop with its type, requirements, and metadata.
  */
-export type PropDoc = {
-	/** prop identifier as declared in the type alias */
+export type PropInfo = {
 	name: string;
-	/** text of the type (rendered verbatim in code font) */
-	typeText: string;
-	/** whether the prop is optional */
-	optional: boolean;
-	/** default value text taken from destructuring (if any) */
-	defaultText?: string;
-	/** whether the default uses $bindable(inner) */
+	type: string;
+	required: boolean;
 	bindable: boolean;
-	/** short description from inline JSDoc (first paragraph) */
-	description?: string;
+	defaultValue?: string;
+	comment?: string;
 };
 
 /**
- * Result of extracting documentation metadata from TypeScript code.
+ * Extracted script block from a Svelte component.
+ * Contains the script content and any attributes (lang, module, etc.).
  */
-export type ExtractResult = {
-	/** inferred type alias name for props when found */
-	inferredTypeName?: string;
-	/** ordered list of props */
-	props: PropDoc[];
-	/** non-object intersection members (e.g., HTMLAttributes<...>) */
-	inherits: string[];
-	/** true when destructuring used a rest pattern ...rest */
-	hasRest: boolean;
-	/** debug lines describing detection steps */
-	debug: string[];
+export type ScriptBlock = {
+	content: string;
+	attributes: Record<string, string | true>;
 };
 
 /**
- * Options used when rendering a @component block.
+ * Internal cache entry for CacheService.
+ * Stores extraction result with metadata for invalidation.
  */
-export type BuildOptions = {
-	/** whether to include the free-form description in the block */
-	addDescription: boolean;
-	/** if true, place the description before props; else after */
-	placeDescriptionBeforeProps: boolean;
-	/** previously captured description text (if any) */
-	existingDescription: string;
-	/** intersection types to render in the inherits line */
-	inherits: string[];
-	/** props to render as bullets */
-	props: PropDoc[];
-	/** whether to escape angle brackets (< >) with placeholder characters */
-	escapeAngleBrackets: boolean;
+export type PropCacheEntry = {
+	result: PropExtractionResult;
+	mtime: number; // File modification time in milliseconds
+	lastAccessed: number; // Timestamp of last access
 };
 
 /**
- * Options that control how SvelteDoc processes a single file.
+ * Cache entry for tsconfig.json resolution results.
  */
-export type ProcessOptions = {
-	/** patterns to find a props type alias when not inferred from $props() */
-	propertyNameMatch: string[];
-	/** include description or not */
-	addDescription: boolean;
-	/** placement of description relative to props */
-	placeDescriptionBeforeProps: boolean;
-	/** whether to escape angle brackets (< >) with placeholder characters */
-	escapeAngleBrackets: boolean;
+export type TsconfigCacheEntry<T> = {
+	result: T | null;
+	mtime: number;
+};
+
+/**
+ * Internal representation of a single property entry in a type/interface.
+ * Used during parsing before conversion to PropInfo.
+ */
+export type TypeEntry = {
+	name: string;
+	type: string;
+	required: boolean;
+	comment?: string;
+};
+
+/**
+ * Type/interface definition with its properties and inheritance chain.
+ * Used internally by propParser to track parsed type structures.
+ */
+export type TypeDefinition = {
+	entries: Partial<Record<string, TypeEntry>>;
+	inherits: string[]; // parent types/interfaces being extended or unioned
+};
+
+/**
+ * Map of type/interface names to their definitions.
+ * Internal structure for tracking all parsed types in a script block.
+ */
+export type TypeMap = Partial<Record<string, TypeDefinition>>;
+
+/**
+ * Scanner context states for character-by-character type parsing.
+ * Used by PropertyScanner to track current parsing state.
+ */
+export enum ScannerContext {
+	NONE, // Seeking next token at depth 0
+	SINGLE_LINE_COMMENT, // Inside // comment
+	MULTI_LINE_COMMENT, // Inside /* */ comment (not JSDoc)
+	JSDOC_COMMENT, // Inside /** */ comment
+	PROPERTY_NAME, // Reading property name
+	AFTER_QUESTION, // Read ? after property name
+	AFTER_COLON, // Read : after property name
+	PROPERTY_TYPE // Reading property type
+}
+
+export type PropExtractionResult = {
+	success: boolean;
+	props?: PropInfo[];
+	inherits?: string[]; // Parent types/interfaces being extended or unioned
+	componentPath?: string;
+	failureReason?: string;
+	fromCache?: boolean; // Indicates if result came from cache
+};
+
+/**
+ * Valid tooltip order options.
+ */
+export type TooltipOrder = 'normal' | 'alphabetical' | 'required' | 'type';
+
+/**
+ * Valid tooltip format options.
+ */
+export type TooltipFormat = 'bullet-list' | 'table' | 'code-block';
+
+/**
+ * Workspace package information from pnpm-workspace.yaml.
+ * Represents a single package in the workspace with its metadata.
+ */
+export type WorkspacePackage = {
+	name: string; // Package name (e.g., @budget-suite/shared)
+	directory: string; // Absolute path to package directory
+	packageJsonPath: string; // Absolute path to package.json
+};
+
+/**
+ * Cache entry for workspace package map.
+ * Stores parsed workspace packages with mtime validation.
+ */
+export type WorkspaceCacheEntry = {
+	workspaceRoot: string; // Absolute path to workspace root
+	packages: Map<string, WorkspacePackage>; // Map of package name to package info
+	mtime: number; // pnpm-workspace.yaml modification time in milliseconds
+};
+
+/**
+ * Cache entry for resolved package paths.
+ * Stores individual package resolution results with metadata.
+ */
+export type PackageResolutionCacheEntry = {
+	resolvedPath: string; // Absolute path to resolved file
+	packageJsonMtime: number; // package.json modification time for invalidation
+	barrelDepth: number; // Number of barrel files traversed (0-2)
+	resolvedAt: number; // Timestamp when resolution occurred
+};
+
+/**
+ * Barrel file resolution result.
+ * Contains the resolved path and metadata about the resolution process.
+ */
+export type BarrelResolutionResult = {
+	path: string; // Absolute path to resolved component
+	depth: number; // Number of barrel files traversed
+	durationMs: number; // Time taken to resolve in milliseconds
 };

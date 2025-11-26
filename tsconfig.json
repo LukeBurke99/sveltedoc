@@ -9,8 +9,11 @@
 		"strict": true /* enable all strict type-checking options */,
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
-		"noUnusedParameters": true
+		"noUnusedParameters": true,
+		"resolveJsonModule": true
 		/* Additional Checks */
 		// "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-	}
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["src/test/fixtures/**/*", "node_modules"]
 }

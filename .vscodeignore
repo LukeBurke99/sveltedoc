@@ -1,3 +1,6 @@
+# Ignores files for VS Code extension packaging
+# See https://code.visualstudio.com/api/working-with-extensions/publishing-extension#excluding-files
+# ---
 .vscode/**
 .vscode-test/**
 src/**

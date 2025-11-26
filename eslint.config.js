@@ -28,7 +28,7 @@ export default ts.config(
 
 	// Project-specific ignores
 	{
-		ignores: ['eslint.config.js', 'out/', 'dist/']
+		ignores: ['eslint.config.js', 'out/', 'dist/', 'src/test/fixtures/']
 	},
 
 	// Language options and globals

@@ -1,134 +1,298 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
-import { processSvelteDoc } from './generator';
-import { fileMatchesPath } from './match';
-import type { ProcessOptions } from './types';
+import { CacheService } from './classes/CacheService';
+import { LoggingService } from './classes/LoggingService';
+import { TooltipFormatter } from './classes/TooltipFormatter';
+import { parsePropsFromScriptBlocks } from './parsers/propParser';
 
-let channel: vscode.OutputChannel | undefined;
-
-function logToChannel(message: string, docName?: string): void {
-	// Ensure the channel exists, then write a prefixed line, optionally scoped to a document
-	channel ??= vscode.window.createOutputChannel('SvelteDoc');
-	const scope = docName ? `[${docName}] ` : '';
-	// Timestamp in HH:mm:ss.SS (centiseconds)
-	const now = new Date();
-	const pad2 = (n: number): string => String(n).padStart(2, '0');
-	const hh = pad2(now.getHours());
-	const mm = pad2(now.getMinutes());
-	const ss = pad2(now.getSeconds());
-	const cs = pad2(Math.floor(now.getMilliseconds() / 10));
-	const ts = `${hh}:${mm}:${ss}.${cs}`;
-
-	channel.appendLine(`[SvelteDoc ${ts}] ${scope}${message}`);
-}
+import { getTagNameAtPosition } from './parsers/tagParser';
+import { PropExtractionResult } from './types';
+import {
+	extractImportsFromScriptBlocks,
+	extractScriptBlocksFromSvelte,
+	extractScriptBlocksFromText
+} from './utils/extractor';
+import { PathResolver } from './utils/pathResolver';
+import { Settings } from './utils/settings';
 
 export function activate(context: vscode.ExtensionContext): void {
-	channel = vscode.window.createOutputChannel('SvelteDoc');
-	context.subscriptions.push(channel);
+	const logger = LoggingService.getInstance();
+	logger.logStarted();
 
-	const registerCommand = vscode.commands.registerCommand(
-		'sveltedoc.documentCurrentFile',
-		async () => {
-			const editor = vscode.window.activeTextEditor;
-			if (!editor || editor.document.languageId !== 'svelte') return;
-			await documentFile(editor.document, true);
+	// Initialize cache with expiration setting
+	const cache = new CacheService(Settings.getCacheExpirationMinutes());
+
+	// Initialize path resolver with cache and detailed logging setting
+	const pathResolver = new PathResolver(
+		cache.getPathResolverCache(),
+		logger,
+		Settings.getDetailedResolverLogging()
+	);
+
+	//#region Simple Event Listeners
+
+	// Log when Svelte files are opened
+	const openDocListener = vscode.workspace.onDidOpenTextDocument((doc) => {
+		if (doc.fileName.endsWith('.svelte')) logger.logSvelteFileOpened(doc.fileName);
+	});
+
+	// Register configuration change listener: Clear cache and update resolver when settings change
+	const configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
+		// Check if any sveltedoc setting changed
+		if (e.affectsConfiguration('sveltedoc')) {
+			cache.clear();
+			pathResolver.setDetailedLogging(Settings.getDetailedResolverLogging());
+			logger.logSettingsChanged();
+		}
+	});
+
+	// Watch for tsconfig.json changes to invalidate path resolver cache
+	const tsconfigWatcher = vscode.workspace.createFileSystemWatcher(
+		'**/tsconfig.json',
+		false,
+		false,
+		false
+	);
+	tsconfigWatcher.onDidChange((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+	tsconfigWatcher.onDidCreate((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+	tsconfigWatcher.onDidDelete((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+
+	// Also watch jsconfig.json for projects that use it instead
+	const jsconfigWatcher = vscode.workspace.createFileSystemWatcher(
+		'**/jsconfig.json',
+		false,
+		false,
+		false
+	);
+	jsconfigWatcher.onDidChange((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+	jsconfigWatcher.onDidCreate((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+	jsconfigWatcher.onDidDelete((uri) => {
+		pathResolver.invalidateTsconfig(uri.fsPath);
+	});
+
+	// Watch for pnpm-workspace.yaml changes to invalidate workspace package cache
+	const workspaceWatcher = vscode.workspace.createFileSystemWatcher(
+		'**/pnpm-workspace.yaml',
+		false,
+		false,
+		false
+	);
+	workspaceWatcher.onDidChange((uri) => {
+		pathResolver.invalidateWorkspace(uri.fsPath);
+	});
+	workspaceWatcher.onDidCreate((uri) => {
+		pathResolver.invalidateWorkspace(uri.fsPath);
+	});
+	workspaceWatcher.onDidDelete((uri) => {
+		pathResolver.invalidateWorkspace(uri.fsPath);
+	});
+
+	//#endregion
+
+	//#region Commands
+
+	// Register command: Clear Cache
+	const clearCacheCommand = vscode.commands.registerCommand('sveltedoc.clearCache', () => {
+		cache.clear();
+		logger.logCacheCleared();
+	});
+
+	// Register command: Show Output
+	const showOutputCommand = vscode.commands.registerCommand('sveltedoc.showOutput', () => {
+		logger.show();
+	});
+
+	//#endregion
+
+	const hoverProvider = vscode.languages.registerHoverProvider(
+		{ language: 'svelte', scheme: 'file' },
+		{
+			provideHover(
+				document: vscode.TextDocument,
+				position: vscode.Position,
+				_token: vscode.CancellationToken
+			): vscode.ProviderResult<vscode.Hover> {
+				try {
+					// mark token as used to avoid unused variable lint complaints
+					void _token;
+					// Only act in .svelte files
+					if (!document.fileName.endsWith('.svelte')) return undefined;
+					const startTime = performance.now();
+
+					const tag = getTagNameAtPosition(document, position);
+					if (!tag) return undefined;
+
+					// Log hover attempt only if different file+tag combination
+					if (!cache.isSameHover(document.fileName, tag))
+						logger.logHoverAttempt(
+							document.fileName,
+							position.line,
+							position.character
+						);
+
+					const result = getPropsForHoveredComponent(document, tag, cache, pathResolver);
+					const durationMs = Math.round(performance.now() - startTime);
+
+					if (result.success && result.props) {
+						// Log component hover only if different file+tag+path combination
+						if (!cache.isSameComponent(document.fileName, tag, result.componentPath))
+							logger.logComponentHover(tag, result.componentPath);
+						// Update tracked state
+						cache.setHover(document.fileName, tag, result.componentPath);
+						// Always log extraction timing with cache source
+						logger.logPropsExtracted(
+							tag,
+							result.props.length,
+							durationMs,
+							result.fromCache ?? false
+						);
+
+						// Get settings for formatting
+						const format = Settings.getTooltipFormat();
+						const order = Settings.getTooltipOrder();
+
+						// Select formatter based on setting
+						const md: vscode.MarkdownString = TooltipFormatter.formatTooltip(
+							format,
+							order,
+							result as Required<PropExtractionResult>
+						);
+						return new vscode.Hover(md);
+					}
+					// Log component hover only if different file+tag+path combination
+					if (!cache.isSameComponent(document.fileName, tag, result.componentPath)) {
+						logger.logComponentHover(tag, result.componentPath);
+						logger.logPropsExtractionFailed(
+							tag,
+							result.failureReason ?? 'Unknown reason'
+						);
+					}
+					// Update tracked state
+					cache.setHover(document.fileName, tag, result.componentPath);
+
+					const md = TooltipFormatter.noPropsFound(
+						tag,
+						result.componentPath,
+						result.failureReason
+					);
+					return new vscode.Hover(md);
+				} catch (error) {
+					logger.logError(error as Error, 'HoverProvider');
+					return undefined;
+				}
+			}
 		}
 	);
-	context.subscriptions.push(registerCommand);
 
-	// On-save hook
-	const saveSub = vscode.workspace.onWillSaveTextDocument((e) => {
-		const doc = e.document;
-		const cfg = vscode.workspace.getConfiguration('sveltedoc', doc.uri);
-		const onSave = cfg.get<boolean>('documentOnSave', true);
-		if (!onSave) return;
-		if (doc.languageId !== 'svelte') return;
-		const patterns = cfg.get<string[]>('filesToDocument', ['**/components/**']);
-		if (!fileMatches(doc.uri, patterns)) {
-			logToChannel('(skipping, file pattern does not match)', doc.fileName);
-			return;
-		}
-
-		const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
-		// Backward compat: map old settings if present
-		const legacyAdd = cfg.get<boolean>('addTitleAndDescription', true);
-		const addDescription = cfg.get<boolean>('addDescription', legacyAdd);
-		const placeDescriptionBeforeProps = cfg.get<boolean>(
-			'placeDescriptionBeforeProps',
-			cfg.get<boolean>('placeTitleBeforeProps', true)
-		);
-		const escapeAngleBrackets = cfg.get<boolean>('escapeAngleBrackets', true);
-
-		const options: ProcessOptions = {
-			propertyNameMatch,
-			addDescription,
-			placeDescriptionBeforeProps,
-			escapeAngleBrackets
-		};
-
-		const start = Date.now();
-		const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
-			processSvelteDoc(doc.getText(), options);
-
-		logToChannel(
-			`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,
-			doc.fileName
-		);
-		for (const line of log) logToChannel(line, doc.fileName);
-
-		if (!changed) return;
-		const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
-		e.waitUntil(Promise.resolve([vscode.TextEdit.replace(fullRange, updated)]));
-	});
-	context.subscriptions.push(saveSub);
+	context.subscriptions.push(
+		openDocListener,
+		hoverProvider,
+		clearCacheCommand,
+		showOutputCommand,
+		configChangeListener,
+		tsconfigWatcher,
+		jsconfigWatcher,
+		workspaceWatcher
+	);
 }
 
 export function deactivate(): void {
-	// no-op
+	LoggingService.getInstance().dispose();
 }
 
-async function documentFile(doc: vscode.TextDocument, showInfo: boolean): Promise<void> {
-	channel ??= vscode.window.createOutputChannel('SvelteDoc');
-	const cfg = vscode.workspace.getConfiguration('sveltedoc', doc.uri);
-	const propertyNameMatch = cfg.get<string[]>('propertyNameMatch', ['*Props']);
-	const legacyAdd = cfg.get<boolean>('addTitleAndDescription', true);
-	const addDescription = cfg.get<boolean>('addDescription', legacyAdd);
-	const placeDescriptionBeforeProps = cfg.get<boolean>(
-		'placeDescriptionBeforeProps',
-		cfg.get<boolean>('placeTitleBeforeProps', true)
-	);
-	const escapeAngleBrackets = cfg.get<boolean>('escapeAngleBrackets', true);
+/**
+ * Extract props for the component hovered over in the given document at the specified tag.
+ * @param document The VSCode text document
+ * @param tagName The component tag name at the hover location
+ * @param cache Optional CacheService instance for caching results
+ * @param pathResolver Optional PathResolver instance for resolving import paths
+ * @returns The prop extraction result
+ */
+export function getPropsForHoveredComponent(
+	document: vscode.TextDocument,
+	tagName: string,
+	cache?: CacheService,
+	pathResolver?: PathResolver
+): PropExtractionResult {
+	// 1) Extract imports from current document text
+	const docText = document.getText();
+	const pageBlocks = extractScriptBlocksFromText(docText);
+	const importMap = extractImportsFromScriptBlocks(pageBlocks);
+	const spec = importMap.get(tagName);
+	if (!spec)
+		return { success: false, failureReason: 'No import found for component', fromCache: false };
 
-	const options: ProcessOptions = {
-		propertyNameMatch,
-		addDescription,
-		placeDescriptionBeforeProps,
-		escapeAngleBrackets
+	// 2) Resolve to absolute file path (with path alias and workspace package support)
+	const compPath = pathResolver?.resolve(document.fileName, spec, tagName);
+	if (!compPath)
+		return {
+			success: false,
+			componentPath: spec,
+			failureReason: 'Could not resolve import path',
+			fromCache: false
+		};
+
+	// 3) Check cache if available
+	if (cache) {
+		const cached = cache.get(compPath);
+		if (cached)
+			// Return cached result with fromCache flag
+			return { ...cached, fromCache: true };
+	}
+
+	// 4) Read component file and extract script blocks
+	if (!fs.existsSync(compPath))
+		return {
+			success: false,
+			componentPath: compPath,
+			failureReason: 'Component file does not exist',
+			fromCache: false
+		};
+
+	const blocks = extractScriptBlocksFromSvelte(compPath);
+
+	// 5) Get normalization settings
+	const normaliseComment = Settings.getNormaliseComment();
+	const normaliseType = Settings.getNormaliseType();
+	const normaliseDefaultValue = Settings.getNormaliseDefaultValue();
+
+	// 6) Parse props using heuristic runes-mode parser
+	const result = parsePropsFromScriptBlocks(
+		blocks,
+		normaliseComment,
+		normaliseType,
+		normaliseDefaultValue
+	);
+	if (!result.props.length) {
+		const failureResult: PropExtractionResult = {
+			success: false,
+			componentPath: compPath,
+			failureReason: 'No $props() found',
+			fromCache: false
+		};
+		return failureResult;
+	}
+
+	const successResult: PropExtractionResult = {
+		success: true,
+		props: result.props,
+		inherits: result.inherits,
+		componentPath: compPath,
+		fromCache: false
 	};
 
-	const start = Date.now();
-	const { updated, changed, log }: { updated: string; changed: boolean; log: string[] } =
-		processSvelteDoc(doc.getText(), options);
+	// 7) Store in cache if available (only cache successful extractions)
+	if (cache) cache.set(compPath, successResult);
 
-	logToChannel(
-		`${changed ? '(updated)' : '(no change)'} in ${String(Date.now() - start)}ms`,
-		doc.fileName
-	);
-	for (const line of log) logToChannel(line, doc.fileName);
-
-	if (changed) {
-		const fullRange = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length));
-		const edit = new vscode.WorkspaceEdit();
-		edit.replace(doc.uri, fullRange, updated);
-		await vscode.workspace.applyEdit(edit);
-		if (showInfo) vscode.window.showInformationMessage('SvelteDoc: documentation updated.');
-	} else if (showInfo) {
-		vscode.window.showInformationMessage('SvelteDoc: no changes needed.');
-	}
+	return successResult;
 }
-
-function fileMatches(uri: vscode.Uri, patterns: string[]): boolean {
-	const rel = vscode.workspace.asRelativePath(uri).replace(/\\/g, '/');
-	return fileMatchesPath(rel, patterns);
-}
-
-// globToRegex moved to ./match for reuse in tests

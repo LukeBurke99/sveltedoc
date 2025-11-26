@@ -1,19 +1,47 @@
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
 {
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
+			"label": "pnpm: compile",
+			"type": "shell",
+			"command": "pnpm",
+			"args": ["run", "compile"],
+			"group": "build",
 			"presentation": {
-				"reveal": "never"
+				"panel": "dedicated",
+				"reveal": "silent"
 			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
+			"problemMatcher": "$tsc"
+		},
+		{
+			"label": "pnpm: watch",
+			"type": "shell",
+			"command": "pnpm",
+			"args": ["run", "compile", "--watch"],
+			"isBackground": true,
+			"group": "build",
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "silent"
+			},
+			"problemMatcher": {
+				"owner": "typescript",
+				"applyTo": "allDocuments",
+				"fileLocation": "relative",
+				"pattern": {
+					"regexp": "^([^\\s].*?)\\((\\d+),(\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"code": 5,
+					"message": 6
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^\\s*\\d{1,2}:\\d{1,2}:\\d{1,2}(?: AM| PM)? - File change detected\\. Starting incremental compilation\\.\\.\\.",
+					"endsPattern": "^\\s*\\d{1,2}:\\d{1,2}:\\d{1,2}(?: AM| PM)? - (Compilation complete\\.|Found \\d+ errors?\\. Watching for file changes\\.)"
+				}
 			}
 		}
 	]

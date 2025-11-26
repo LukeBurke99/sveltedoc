@@ -2,8 +2,8 @@
 	"name": "sveltedoc",
 	"publisher": "burke-development",
 	"displayName": "SvelteDoc",
-	"description": "Automatically generate and maintain documentation for your Svelte components, right inside VS Code.",
-	"version": "1.2.0",
+	"description": "Provide documentation for your Svelte components, right inside the VS Code \"hover\" tooltip.",
+	"version": "2.0.0",
 	"icon": "images/logo/512.png",
 	"galleryBanner": {
 		"theme": "dark",
@@ -67,57 +67,88 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "sveltedoc.documentCurrentFile",
-				"title": "SvelteDoc: Document Current File",
-				"enablement": "resourceLangId == svelte"
+				"command": "sveltedoc.clearCache",
+				"title": "%command.clearCache.title%",
+				"category": "SvelteDoc"
+			},
+			{
+				"command": "sveltedoc.showOutput",
+				"title": "%command.showOutput.title%",
+				"category": "SvelteDoc"
 			}
 		],
 		"configuration": {
 			"title": "SvelteDoc",
 			"properties": {
-				"sveltedoc.documentOnSave": {
-					"type": "boolean",
-					"default": true,
-					"description": "Whether to generate documentation for a Svelte component when the file is saved."
+				"sveltedoc.cacheExpirationMinutes": {
+					"type": "number",
+					"default": 30,
+					"minimum": 1,
+					"description": "%settings.cacheExpirationMinutes.description%",
+					"order": 0
 				},
-				"sveltedoc.filesToDocument": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"**/components/**"
-					],
-					"description": "Glob-like patterns of files/folders where documentation generation should run. Only .svelte files are considered."
-				},
-				"sveltedoc.propertyNameMatch": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"*Props"
-					],
-					"description": "Type/interface name patterns to use when the $props() destructuring type cannot be inferred. Supports * as a wildcard (e.g., *Props)."
-				},
-				"sveltedoc.addDescription": {
-					"type": "boolean",
-					"default": true,
-					"description": "Include an editable description section in the @component block."
-				},
-				"sveltedoc.placeDescriptionBeforeProps": {
+				"sveltedoc.normaliseComment": {
 					"type": "boolean",
 					"default": false,
-					"description": "If true, place the description before the Props section; otherwise, place it after."
+					"description": "%settings.normaliseComment.description%",
+					"order": 1
 				},
-				"sveltedoc.escapeAngleBrackets": {
+				"sveltedoc.normaliseType": {
 					"type": "boolean",
 					"default": true,
-					"description": "IMPORTANT: Enable this to fix formatting issues with other extensions (e.g. Auto Rename Tag). Escapes angle brackets (< >) in documentation with visible placeholder characters."
+					"description": "%settings.normaliseType.description%",
+					"order": 2
+				},
+				"sveltedoc.normaliseDefaultValue": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.normaliseDefaultValue.description%",
+					"order": 3
+				},
+				"sveltedoc.tooltipOrder": {
+					"type": "string",
+					"default": "required",
+					"enum": [
+						"normal",
+						"alphabetical",
+						"required",
+						"type"
+					],
+					"enumDescriptions": [
+						"%settings.tooltipOrder.normal%",
+						"%settings.tooltipOrder.alphabetical%",
+						"%settings.tooltipOrder.required%",
+						"%settings.tooltipOrder.type%"
+					],
+					"description": "%settings.tooltipOrder.description%",
+					"order": 4
+				},
+				"sveltedoc.tooltipFormat": {
+					"type": "string",
+					"default": "code-block",
+					"enum": [
+						"bullet-list",
+						"table",
+						"code-block"
+					],
+					"enumDescriptions": [
+						"%settings.tooltipFormat.bulletList%",
+						"%settings.tooltipFormat.table%",
+						"%settings.tooltipFormat.codeBlock%"
+					],
+					"description": "%settings.tooltipFormat.description%",
+					"order": 5
+				},
+				"sveltedoc.detailedResolverLogging": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.detailedResolverLogging.description%",
+					"order": 6
 				}
 			}
 		}
 	},
+	"//": "c8 configuration for code coverage only",
 	"c8": {
 		"include": [
 			"src/**/*.ts"
@@ -133,8 +164,9 @@
 		"all": true
 	},
 	"scripts": {
+		"clean": "npx rimraf out node_modules coverage .eslintcache",
 		"compile": "tsc -p ./",
-		"lint": "eslint src --fix",
+		"lint": "eslint src --fix --cache --cache-location .eslintcache",
 		"pretest": "pnpm run compile && pnpm run lint",
 		"test": "mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
 		"coverage": "c8 mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
@@ -170,10 +202,16 @@
 		"globals": "^16.3.0",
 		"mocha": "^10.7.3",
 		"prettier": "^3.6.2",
+		"rimraf": "^6.0.1",
 		"semantic-release": "^24.2.7",
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.2",
-		"typescript-eslint": "^8.41.0"
+		"typescript-eslint": "^8.41.0",
+		"vscode-nls": "^5.2.0"
 	},
-	"packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+	"packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+	"dependencies": {
+		"get-tsconfig": "^4.13.0",
+		"yaml": "^2.8.1"
+	}
 }

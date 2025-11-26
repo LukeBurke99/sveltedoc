@@ -1,0 +1,4 @@
+packages:
+    - 'code/shared'
+    - 'code/budget-app'
+    - 'code/shopping-app'
