@@ -19,6 +19,8 @@ vsc-extension-quickstart.md
 # Ignore configs
 config
 pnpm-lock.yaml
+.eslintcache
+.mocharc.json
 
 # Ignore coverage and test output
 coverage/
@@ -27,3 +29,9 @@ coverage/
 # Ignore GitHub workflows and release config
 .github/
 .releaserc.json
+
+# Exclude specific markdown files (keep readme.md and changelog.md)
+PHASE2.md
+TASKS.md
+Tasks4Luke.md
+Version*.md
