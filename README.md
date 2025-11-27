@@ -23,13 +23,12 @@ No need to jump between files or generate documentation blocks — SvelteDoc bri
 * [Quick Start](#quick-start)
 * [Features](#features)
 * [Best Practices](#best-practices)
+  * [Important Practices](#important-practices)
   * [Path Resolution](#path-resolution)
   * [Workspace Packages](#workspace-packages)
 * [Configuration](#configuration)
 * [Commands](#commands)
 * [Troubleshooting](#troubleshooting)
-* [Migration from v1](#migration-from-v1)
-* [Requirements](#requirements)
 * [References](#references)
 
 ---
@@ -90,18 +89,25 @@ No need to jump between files or generate documentation blocks — SvelteDoc bri
 
 ## Best Practices
 
+### Important Practices
+
+It is highly recommended to follow best practices (for Svelte 5) to ensure SvelteDoc works optimally. The following list is essential:
+- Components must be capitalized (e.g., `<Button>`, `<Card>`) to be recognized.
+- Always use **typed** `$props()` destructuring in your components.
+> Read the following sections on path resolution and workspace packages to ensure imports are resolved correctly.
+
 ### Path Resolution
 
 SvelteDoc resolves imports intelligently. Here's how to configure your project for best results:
 
-#### Relative Paths
+#### 1. Relative Paths
 Works out of the box:
 ```typescript
 import Button from './Button.svelte';
 import Card from '../components/Card.svelte';
 ```
 
-#### tsconfig.json Path Aliases
+#### 2. tsconfig.json Path Aliases
 Define aliases in your `tsconfig.json` or `jsconfig.json`:
 
 ```json
@@ -121,18 +127,14 @@ Then use them in imports:
 import Button from '$lib/components/Button.svelte';
 import Card from '@components/Card.svelte';
 ```
+> SvelteDoc will automatically find your aliases and resolve it to the actual file path, checking barrel files as needed. Path aliases that are defined in multiple tsconfig files (like extending a base config for SvelteKit) are also supported.
 
-SvelteDoc will automatically:
-- Find your tsconfig.json
-- Resolve the alias to the actual file path
-- Try multiple extensions (`.svelte`, `.ts`, `.js`)
-- Check for index files if the path is a directory
-
-#### SvelteKit Projects
-SvelteKit automatically configures `$lib` alias. Just use it:
+#### 3. Local Libraries
+Currently works with PNPM workspaces (see next section). Enusre you have a `pnpm-workspace.yaml` file at your monorepo root and the library package is referenced in your `package.json` file. Then just import as normal:
 ```typescript
-import Button from '$lib/components/Button.svelte';
+import { Button } from '@myorg/mylib';
 ```
+> SvelteDoc will resolve the library's package, check the `exports` field in `package.json`, and follow barrel files to find the component.
 
 ### Workspace Packages
 
@@ -320,41 +322,6 @@ Opens the SvelteDoc output panel showing detailed logs of hover attempts, compon
 - Run command: "SvelteDoc: Clear Cache"
 - Check if file was saved (cache validates via modification time)
 - Adjust `cacheExpirationMinutes` setting for faster expiration
-
----
-
-## Migration from v1
-
-**v2.0.0 is a complete rewrite** with a fundamentally different approach:
-
-### What Changed
-- ❌ **Removed:** Automatic `<!-- @component -->` block generation
-- ❌ **Removed:** Save-triggered documentation updates
-- ❌ **Removed:** File pattern matching (`filesToDocument` setting)
-- ✅ **Added:** Real-time hover tooltips showing component props
-- ✅ **Added:** Path alias and workspace package resolution
-- ✅ **Added:** Customizable tooltip formats and sorting
-
-### Why the Change?
-v1 modified your source files by inserting documentation blocks. v2 takes a **non-invasive approach**:
-- **Cleaner files** — No generated documentation blocks cluttering your components
-- **Always up-to-date** — Hovers reflect current code, not stale generated docs
-- **Zero maintenance** — No need to regenerate docs when types change
-
-### How to Migrate
-1. **Remove old `@component` blocks** (optional — they won't interfere, but aren't needed)
-2. **Ensure your components use `$props()` with type annotations** (same as v1)
-3. **Hover over component tags** to see the new tooltip experience
-
-That's it! Your existing components will work immediately.
-
----
-
-## Requirements
-
-- **VS Code:** 1.103.0 or higher
-- **Svelte:** Version 5 (uses `$props()` runes)
-- **TypeScript:** Required for type annotations
 
 ---
 
