@@ -57,6 +57,7 @@
 	"resolver.log.barrelMaxDepthReached": "  ├─ Max barrel depth ({0}) reached",
 	"resolver.log.barrelFileDetected": "  ├─ Barrel file detected: {0}",
 	"resolver.log.barrelExportFound": "  ├─ Found barrel export: {0} → {1}",
+	"resolver.log.barrelWildcardExports": "  ├─ Found {0} wildcard export(s), searching for {1}",
 	"resolver.log.workspacePackageNotFound": "  ├─ Workspace package not found: {0}",
 	"resolver.log.workspacePackageMatched": "  ├─ Matched workspace package: {0} at {1}",
 	"resolver.log.barrelResolutionComplete": "  └─ ✅ Barrel resolved (depth {0}) in {1}ms: {2}"

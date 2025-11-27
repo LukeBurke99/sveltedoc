@@ -381,9 +381,9 @@ export class PathResolver {
 	 * Supports patterns: export { default as X }, export { X }, export * from
 	 * @param content File content to parse
 	 * @param componentName Component name to find
-	 * @returns Relative path to component or null if not found
+	 * @returns Relative path to component, or array of wildcard paths to try, or null if not found
 	 */
-	private parseBarrelExports(content: string, componentName: string): string | null {
+	private parseBarrelExports(content: string, componentName: string): string | string[] | null {
 		// Pattern 1: export { default as ComponentName } from './path'
 		const pattern1 = new RegExp(
 			`export\\s+\\{\\s*default\\s+as\\s+${componentName}\\s*\\}\\s+from\\s+['"]([^'"]+)['"]`,
@@ -400,16 +400,14 @@ export class PathResolver {
 		match = pattern2.exec(content);
 		if (match) return match[1];
 
-		// Pattern 4: export * from './path' - need to check if path contains the component
-		// This is ambiguous, so we'll check if the path looks like it might be our component
+		// Pattern 4: export * from './path' - return all wildcard exports to try
+		// These are ambiguous, so we need to try each one until we find the component
 		const pattern4 = /export\s+\*\s+from\s+['"]([^'"]+)['"]/g;
 		const wildcardMatches: string[] = [];
 		while ((match = pattern4.exec(content)) !== null) wildcardMatches.push(match[1]);
 
-		// If we found wildcard exports, return the first one that might match
-		// (e.g., './components/index.ts' for nested barrel)
-		for (const wildcardPath of wildcardMatches)
-			if (wildcardPath.includes('index')) return wildcardPath;
+		// If we found wildcard exports, return all of them to be tried in order
+		if (wildcardMatches.length > 0) return wildcardMatches;
 
 		return null;
 	}
@@ -444,9 +442,66 @@ export class PathResolver {
 
 		try {
 			const content = fs.readFileSync(indexPath, 'utf8');
-			const relativePath = this.parseBarrelExports(content, componentName);
+			const parseResult = this.parseBarrelExports(content, componentName);
 
-			if (!relativePath) return null;
+			if (!parseResult) return null;
+
+			// Handle array of wildcard paths (export * from './path')
+			if (Array.isArray(parseResult)) {
+				if (this.detailedLogging)
+					this.logger.logResolverMessage(
+						t(
+							'resolver.log.barrelWildcardExports',
+							parseResult.length.toString(),
+							componentName
+						)
+					);
+
+				// Try each wildcard path until we find the component
+				const indexDir = path.dirname(indexPath);
+				for (const relativePath of parseResult) {
+					let resolvedPath = path.resolve(indexDir, relativePath);
+
+					// Try with extension fallback if path doesn't have extension
+					if (!path.extname(resolvedPath)) {
+						const withExtensions = this.tryPathWithExtensions([resolvedPath]);
+						if (withExtensions) resolvedPath = withExtensions;
+						else continue; // Path doesn't exist, try next one
+					}
+
+					// Check if resolved path exists
+					if (!fs.existsSync(resolvedPath)) continue;
+
+					// Check if this is another index file (nested barrel)
+					const fileName = path.basename(resolvedPath, path.extname(resolvedPath));
+					if (fileName === 'index') {
+						// Recurse into nested barrel
+						const nestedResult = this.resolveBarrelFile(
+							resolvedPath,
+							componentName,
+							currentDepth + 1,
+							maxDepth
+						);
+						if (nestedResult)
+							return nestedResult; // Found it!
+						else continue; // Not in this barrel, try next one
+					}
+
+					// Found the component file
+					const durationMs = Math.round(performance.now() - startTime);
+					return {
+						path: resolvedPath,
+						depth: currentDepth + 1,
+						durationMs
+					};
+				}
+
+				// None of the wildcard paths contained the component
+				return null;
+			}
+
+			// Handle single path (export { X } from './path' or export { default as X } from './path')
+			const relativePath = parseResult;
 
 			if (this.detailedLogging)
 				this.logger.logResolverMessage(
