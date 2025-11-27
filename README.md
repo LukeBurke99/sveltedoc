@@ -1,140 +1,370 @@
 # SvelteDoc
 
-
-> Generate and maintain component documentation blocks for your Svelte 5 components directly in your source files. The docs appear at the top of the file and show up in hovers when you use the component elsewhere.
+> **Intelligent hover tooltips for your Svelte 5 components** — See component props, types, and JSDoc comments without leaving your workflow.
 
 ## What it does
 
-- Parses your Svelte component's TypeScript to discover props from `$props()` typed destructuring.
-- Finds the props type alias (e.g., `Props`, `ButtonProps`) or falls back to patterns like `*Props`.
-- Builds a single `<!-- @component ... -->` block at the top of the file.
-- Preserves your free-form description text across runs and updates only the generated parts.
-- Supports extended/union types via intersections (e.g., `HTMLAttributes<...> & { ... }`).
+Hover over any Svelte component tag to instantly see:
+- **Props** extracted from `$props()` type annotations
+- **Type information** including complex TypeScript types and generics
+- **JSDoc comments** explaining each prop
+- **Default values** and `$bindable()` indicators
+- **Inherited types** from extended interfaces
 
+No need to jump between files or generate documentation blocks — SvelteDoc brings the information to you.
 
 ![Example of documented component](images/documentation.png)
 
 > **Suggestions are welcome!** Please create an issue on the GitHub repo and your suggestion will be taken into consideration!
 
-# Index
-* [What it does](#what-it-does)
+---
+
+## Table of Contents
+* [Quick Start](#quick-start)
+* [Features](#features)
+* [Best Practices](#best-practices)
+  * [Path Resolution](#path-resolution)
+  * [Workspace Packages](#workspace-packages)
+* [Configuration](#configuration)
 * [Commands](#commands)
-* [Settings](#settings)
-* [File matching guide](#file-matching-guide)
-* [Output channel](#output-channel)
-* [How it works](#how-it-works)
-* [Notes](#notes)
 * [Troubleshooting](#troubleshooting)
+* [Migration from v1](#migration-from-v1)
+* [Requirements](#requirements)
 * [References](#references)
-* [Release Notes](#release-notes)
 
-## Commands
+---
 
-- `SvelteDoc: Document Current File`
-	- Runs on the active editor when it's a `.svelte` file and will add the component documentation to the top of the file.
+## Quick Start
 
-## Settings
+**1. Create a component with typed props:**
 
-While SvelteDoc works out of the box and is configured for the most productive settings, there are multiple options under the `sveltedoc` namespace.
+```svelte
+<!-- Button.svelte -->
+<script lang="ts">
+	interface Props {
+		/** Button text to display */
+		label: string;
 
-1. `sveltedoc.documentOnSave` (boolean, default: **true**)
-	- Run documentation generation whenever a matching `.svelte` file is saved.
+		/** Visual style variant */
+		variant?: 'primary' | 'secondary';
 
-2. `sveltedoc.filesToDocument` (string[], default: **["\*\*/components/\*\*"]**)
-	- Glob-like patterns for files/folders where docs should run. **Only `.svelte` files are processed**.
+		/** Click handler */
+		onClick?: (event: MouseEvent) => void;
+	}
 
-3. `sveltedoc.propertyNameMatch` (string[], default: **["\*Props"]**)
-	- Fallback patterns for the props type alias when it can't be inferred from `$props()`.
-	- Works with both `type` and `interface` declarations (e.g., `type ButtonProps = {...}` or `interface ButtonProps { ... }`).
+	const { label, variant = 'primary', onClick }: Props = $props();
+</script>
 
-4. `sveltedoc.addDescription` (boolean, default: **true**)
-	- Include an editable description section in the @component block.
-	- Changes to this section will be persisted, while the props will always be auto-generated from the JSDoc comments.
+<button class={variant} onclick={onClick}>
+	{label}
+</button>
+```
 
-5. `sveltedoc.placeDescriptionBeforeProps` (boolean, default: **false**)
-	- Whether to place the description before or after the props section.
+**2. Import and use the component:**
 
-6. `sveltedoc.escapeAngleBrackets` (boolean, default: **true**)
-	- **IMPORTANT**: Enable this to fix formatting issues with other extensions (e.g. Auto Rename Tag).
-	- When enabled, escapes angle brackets (`<` `>`) in documentation with visible placeholder characters (`◄` `►`).
-	- This prevents conflicts with HTML parsing in VS Code's markdown renderer and other extensions.
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+	import Button from './Button.svelte';
+</script>
 
-## File matching guide
+<!-- Hover over "Button" to see prop documentation -->
+<Button label="Click me" variant="secondary" />
+```
 
-The extension runs on save only for files whose path matches your `sveltedoc.filesToDocument` patterns.
+**3. See the magic!** Hover over `<Button` and see a tooltip with:
+- `label: string` — Button text to display ⚠️ (required)
+- `variant?: 'primary' | 'secondary'` — Visual style variant (default: `'primary'`)
+- `onClick?: (event: MouseEvent) => void` — Click handler
 
-- Default: `["**/components/**"]`
-- Only `.svelte` files are processed (the pattern filters by path, the extension then ensures the file is a Svelte file).
-- Works across nested folders and monorepos. On Windows paths are normalized so forward-slash globs work.
+---
 
-Examples that match:
+## Features
 
-- `src/lib/components/MainView.svelte`
-- `src/lib/components/Some/Other/Folders/Other.svelte`
-- `src/Apps/MobileApp/src/lib/components/some other folder/component.svelte`
-- `src/components/A.svelte`
-- `src/components/Folder/B.svelte`
+- **🎯 Intelligent Prop Extraction** — Parses multi-line properties, nested types, TypeScript utilities, and JSDoc comments automatically.
+- **⚡ Smart Import Resolution** — Resolves relative imports, tsconfig aliases, and workspace packages seamlessly.
+- **📊 Customizable Tooltips** — Choose between bullet list, table, or code block formats with four sorting options.
+- **⚡ Performance Optimized** — In-memory caching with automatic invalidation keeps tooltips fast and accurate.
 
-Examples that do not match:
+---
 
-- `src/routes/+page.svelte`
-- `src/lib/RandomSvelteFile.svelte`
+## Best Practices
 
-Tip: You can add more patterns if you keep components in different places, e.g.
+### Path Resolution
+
+SvelteDoc resolves imports intelligently. Here's how to configure your project for best results:
+
+#### Relative Paths
+Works out of the box:
+```typescript
+import Button from './Button.svelte';
+import Card from '../components/Card.svelte';
+```
+
+#### tsconfig.json Path Aliases
+Define aliases in your `tsconfig.json` or `jsconfig.json`:
 
 ```json
 {
-	"sveltedoc.filesToDocument": [
-		"**/components/**",
-		"**/src/lib/features/**"
-	]
+	"compilerOptions": {
+		"paths": {
+			"$lib/*": ["./src/lib/*"],
+			"@components/*": ["./src/components/*"],
+			"@utils/*": ["./src/utils/*"]
+		}
+	}
 }
 ```
 
-## Output channel
+Then use them in imports:
+```typescript
+import Button from '$lib/components/Button.svelte';
+import Card from '@components/Card.svelte';
+```
 
-The extension writes detailed logs to the "SvelteDoc" output channel (View -> Output -> SvelteDoc) so you can see what it detected and changed. If there are any errors with the extension then they will be displayed here.
+SvelteDoc will automatically:
+- Find your tsconfig.json
+- Resolve the alias to the actual file path
+- Try multiple extensions (`.svelte`, `.ts`, `.js`)
+- Check for index files if the path is a directory
 
-## How it works
+#### SvelteKit Projects
+SvelteKit automatically configures `$lib` alias. Just use it:
+```typescript
+import Button from '$lib/components/Button.svelte';
+```
 
-1. Reads all `<script lang="ts">` blocks in the component.
-2. Detects `$props()` destructuring and captures defaults and `$bindable(...)` usage.
-3. Resolves the props type as a type alias or interface and parses object members, optionality, JSDoc summaries, and inherited types.
-4. Renders a single `@component` block and inserts it before the first TS `<script>` tag.
-5. Preserves only the description section; everything else is regenerated. If the description is placed before props, we keep lines before the `### Props` header. If the description is after props, we keep lines after the props list to the closing `-->`. The position of the description is determined by the `sveltedoc.placeDescriptionBeforeProps` setting.
+### Workspace Packages
 
-## Notes
+For monorepos using **pnpm workspaces**, SvelteDoc provides advanced barrel file resolution.
 
-- If no props are detected, `### Props` is omitted and the block becomes description-only (still useful for hovers).
-- Defaults using `$bindable(inner)` are shown as `inner`.
-- Angle brackets (`<` and `>`) and apostrophes (`'`) are replaced with special characters/codes because of bugs and compatibility issues with other extensions.
- - Prop modifiers are shortened and placed at the beginning of the property name.
- 	- `!` = required
-	- `$` = bindable
-	- Example: `!$ name string - <description_here>` is a required **string** property called **name** and can be bound using `$bindable('some string here')`.
+#### Setting up a Shared Package
+
+**1. Create workspace structure:**
+```
+project-root/
+├── pnpm-workspace.yaml
+├── packages/
+│   ├── shared/
+│   │   ├── package.json
+│   │   └── src/
+│   │       ├── index.ts          # Barrel file
+│   │       └── components/
+│   │           ├── index.ts      # Nested barrel
+│   │           ├── Button.svelte
+│   │           └── Card.svelte
+│   └── app/
+│       ├── package.json
+│       └── src/
+│           └── App.svelte
+```
+
+**2. Configure `pnpm-workspace.yaml`:**
+```yaml
+packages:
+  - 'packages/*'
+```
+
+**3. Set up `package.json` with exports:**
+```json
+{
+	"name": "@myorg/shared",
+	"exports": {
+		".": {
+			"svelte": "./src/index.ts",
+			"default": "./src/index.ts"
+		},
+		"./components": {
+			"svelte": "./src/components/index.ts",
+			"default": "./src/components/index.ts"
+		}
+	}
+}
+```
+
+**4. Create barrel files:**
+
+`packages/shared/src/index.ts`:
+```typescript
+// Re-export from nested barrels
+export * from './components/index.ts';
+```
+
+`packages/shared/src/components/index.ts`:
+```typescript
+// Named default re-exports (recommended)
+export { default as Button } from './Button.svelte';
+export { default as Card } from './Card.svelte';
+
+// Or named re-exports
+export { Button } from './Button.svelte';
+export { Card } from './Card.svelte';
+```
+
+**5. Use in consuming packages:**
+```svelte
+<script lang="ts">
+	// SvelteDoc will resolve through barrels automatically
+	import { Button, Card } from '@myorg/shared';
+</script>
+
+<!-- Hover works! -->
+<Button label="Click me" />
+<Card title="My Card" />
+```
+
+> **Note:** SvelteDoc automatically resolves barrel files (re-exports) up to 2 levels deep and caches results for performance.
+
+---
+
+## Configuration
+
+All settings are under the `sveltedoc` namespace:
+
+- **`cacheExpirationMinutes`** (number, default: `30`) — Minutes of inactivity before clearing cached props. ⚠️ Higher values may increase memory usage.
+
+- **`normaliseComment`** (boolean, default: `false`) — Remove extra whitespace from JSDoc comments for compact display.
+
+- **`normaliseType`** (boolean, default: `true`) — Remove extra whitespace from type definitions for compact display.
+
+- **`normaliseDefaultValue`** (boolean, default: `true`) — Remove extra whitespace from default values for compact display.
+
+- **`tooltipOrder`** (string, default: `'required'`) — Property display order: `normal`, `alphabetical`, `required`, or `type`.
+
+- **`tooltipFormat`** (string, default: `'code-block'`) — Tooltip format: `bullet-list`, `table`, or `code-block`.
+
+- **`detailedResolverLogging`** (boolean, default: `true`) — Enable detailed logging for import resolution debugging. Check Output panel (View → Output → SvelteDoc).
+
+---
+
+## Commands
+
+Access via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
+
+### `SvelteDoc: Clear Cache`
+Clears all cached component prop data. Useful if you see stale information after updating component types.
+
+### `SvelteDoc: Show Output`
+Opens the SvelteDoc output panel showing detailed logs of hover attempts, component resolution, and prop extraction.
+
+---
 
 ## Troubleshooting
 
-- Nothing happens on save:
-	- Ensure the file path matches `sveltedoc.filesToDocument`.
-	- Confirm the file has `<script lang="ts">` blocks.
-	- Check the SvelteDoc output channel for diagnostics.
-- `<script>` tag is corrupted after saving.
-	- This seems to be an intermittent bug caused by the **Auto Rename Tag** extension. This is why the angle brackets and apostrophes are replaced with special characters.
-	- Please report this issue if you run into it and provide your type definition, including the JSDoc comments you are using.
+### "No import found for component"
+**Problem:** Tooltip shows error when hovering over component tag.
 
-> Please report any bugs to the GitHub issues page for them to be triaged and fixed.
+**Solutions:**
+- Verify the component is imported in your `<script>` block
+- Check import statement syntax (both default and named imports work)
+- Ensure component name matches the imported name exactly (case-sensitive)
+
+**Example:**
+```svelte
+<script lang="ts">
+	// ✅ Works
+	import Button from './Button.svelte';
+	import { Card } from './Card.svelte';
+
+	// ❌ Won't work — no import
+	// <Alert /> won't show tooltip
+</script>
+
+<Button label="Test" />
+<Card title="Works" />
+```
+
+### "No $props() found"
+**Problem:** Tooltip shows "No props found" even though component has props.
+
+**Solutions:**
+- Add `$props()` destructuring to your component
+- Ensure `$props()` has a type annotation (`: Props` or `: { ... }`)
+- Check that the type is defined in the same file or imported
+
+**Example:**
+```svelte
+<!-- ❌ Won't work — no type annotation -->
+<script lang="ts">
+	const { label } = $props();
+</script>
+
+<!-- ✅ Works — has type annotation -->
+<script lang="ts">
+	interface Props {
+		label: string;
+	}
+
+	const { label }: Props = $props();
+</script>
+```
+
+### "Could not resolve component path"
+**Problem:** Import path cannot be resolved (tsconfig alias or workspace package).
+
+**Solutions:**
+- Verify `tsconfig.json` or `jsconfig.json` has correct `paths` configuration
+- For workspace packages, ensure `pnpm-workspace.yaml` exists and references the package
+- Check `package.json` has properly configured `exports` field
+- Enable `detailedResolverLogging` setting and check Output panel for details
+
+**Check Output Panel:**
+1. Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Run "SvelteDoc: Show Output"
+3. Look for resolver logs showing which paths were tried
+
+### Stale or Incorrect Information
+**Problem:** Tooltip shows outdated props after changing component definition.
+
+**Solutions:**
+- Run command: "SvelteDoc: Clear Cache"
+- Check if file was saved (cache validates via modification time)
+- Adjust `cacheExpirationMinutes` setting for faster expiration
+
+---
+
+## Migration from v1
+
+**v2.0.0 is a complete rewrite** with a fundamentally different approach:
+
+### What Changed
+- ❌ **Removed:** Automatic `<!-- @component -->` block generation
+- ❌ **Removed:** Save-triggered documentation updates
+- ❌ **Removed:** File pattern matching (`filesToDocument` setting)
+- ✅ **Added:** Real-time hover tooltips showing component props
+- ✅ **Added:** Path alias and workspace package resolution
+- ✅ **Added:** Customizable tooltip formats and sorting
+
+### Why the Change?
+v1 modified your source files by inserting documentation blocks. v2 takes a **non-invasive approach**:
+- **Cleaner files** — No generated documentation blocks cluttering your components
+- **Always up-to-date** — Hovers reflect current code, not stale generated docs
+- **Zero maintenance** — No need to regenerate docs when types change
+
+### How to Migrate
+1. **Remove old `@component` blocks** (optional — they won't interfere, but aren't needed)
+2. **Ensure your components use `$props()` with type annotations** (same as v1)
+3. **Hover over component tags** to see the new tooltip experience
+
+That's it! Your existing components will work immediately.
+
+---
+
+## Requirements
+
+- **VS Code:** 1.103.0 or higher
+- **Svelte:** Version 5 (uses `$props()` runes)
+- **TypeScript:** Required for type annotations
+
+---
 
 ## References
 
-Here is a list of references that helped me build this extension.
-- [Svelte Type Safety](https://svelte.dev/docs/svelte/$props#Type-safety): Outlines how to properly type your component properties.
-- [Svelte Component Documentation](https://svelte.dev/docs/svelte/faq#How-do-I-document-my-components): Provides an example of how to create component documentation.
+- [Svelte 5 Runes Documentation](https://svelte.dev/docs/svelte/$props)
+- [Svelte Type Safety Guide](https://svelte.dev/docs/svelte/$props#Type-safety)
+- [TypeScript Path Mapping](https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping)
 
-## Release Notes
-
-> Please see the changelog for release notes.
-[Changelog](CHANGELOG.md)
+---
 
 ## License
 
