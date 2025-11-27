@@ -1,48 +1,46 @@
 name: Republish to Marketplace
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to republish (e.g., 2.0.0)'
-        required: true
-        type: string
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to republish (e.g., 2.0.0)'
+                required: true
+                type: string
 
 jobs:
-  republish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: v${{ inputs.version }}
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-      
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      
-      - name: Download release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release download v${{ inputs.version }} \
-            --pattern "sveltedoc-${{ inputs.version }}.vsix" \
-            --dir ./releases
-      
-      - name: Publish to VS Code Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: |
-          npx vsce publish --packagePath ./releases/sveltedoc-${{ inputs.version }}.vsix
+    republish:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: v${{ inputs.version }}
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Download release asset
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release download v${{ inputs.version }} \
+                    --pattern "sveltedoc-${{ inputs.version }}.vsix" \
+                    --dir ./releases
+
+            - name: Publish to VS Code Marketplace
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: |
+                  npx vsce publish --packagePath ./releases/sveltedoc-${{ inputs.version }}.vsix
