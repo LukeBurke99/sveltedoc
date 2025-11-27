@@ -31,13 +31,11 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Download release asset
-              env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build and package extension
               run: |
-                  gh release download v${{ inputs.version }} \
-                    --pattern "sveltedoc-${{ inputs.version }}.vsix" \
-                    --dir ./releases
+                  pnpm run compile
+                  mkdir -p releases
+                  npx vsce package -o releases/sveltedoc-${{ inputs.version }}.vsix
 
             - name: Publish to VS Code Marketplace
               env:
