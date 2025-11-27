@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.0...v2.0.1) (2025-11-27)
+
+### 🐛 Bug Fixes
+
+* Fix multiple barrel files not eing resolved. ([6d42ab1](https://github.com/LukeBurke99/sveltedoc/commit/6d42ab15c953eaadd18dabc0df02be63dcd40290))
+
 ## [2.0.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.2.0...v2.0.0) (2025-11-27)
 
 ### ⚠ BREAKING CHANGES
