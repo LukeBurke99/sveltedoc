@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.2.0...v2.0.0) (2025-11-27)
+
+### ⚠ BREAKING CHANGES
+
+* v2.0.0 completely replaces v1 functionality.
+
+v1 generated `<!-- @component -->` blocks in files on save.
+v2 provides real-time hover tooltips without modifying files.
+
+**Removed:**
+- Documentation block generation
+- All v1 settings (documentOnSave, filesToDocument, propertyNameMatch, etc.)
+
+**Added:**
+- Hover tooltips showing props, types, JSDoc comments, and defaults
+- Smart import resolution (relative paths, tsconfig aliases, workspace packages)
+- Barrel file resolution for monorepo packages
+- In-memory caching with automatic invalidation
+- Customizable tooltip formats and sorting options
+
+**Migration:**
+Existing components work immediately. Hover over component tags to see tooltips. You can now remove the `@component` blocks from your components.
+
+### ✨ Features
+
+* rework the extension to be less intrusive and more stable, using a new hover provider instead of `[@component](https://github.com/component)` blocks. ([a68573f](https://github.com/LukeBurke99/sveltedoc/commit/a68573f9031b0a7f5b338f4d6603e98519220913))
+
 ## [1.2.0](https://github.com/LukeBurke99/sveltedoc/compare/v1.1.0...v1.2.0) (2025-09-17)
 
 ### ✨ Features
