@@ -1,0 +1,8 @@
+{
+	"name": "@budget-suite/shared",
+	"version": "1.0.0",
+	"exports": {
+		"./components/button": "./src/lib/components/Button.svelte",
+		"./components/core": "./src/lib/components/core/index.ts"
+	}
+}

@@ -16,9 +16,9 @@
 		},
 		// Disable all validation for test fixtures
 		"files.associations": {
-			"**/src/test/fixtures/**/*.svelte": "plaintext",
-			"**/src/test/fixtures/**/*.ts": "plaintext",
-			"**/src/test/fixtures/**/*.js": "plaintext"
+			"**/tests/fixtures/**/*.svelte": "plaintext",
+			"**/tests/fixtures/**/*.ts": "plaintext",
+			"**/tests/fixtures/**/*.js": "plaintext"
 		}
 	}
 }

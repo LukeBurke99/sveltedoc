@@ -281,24 +281,25 @@ export class PathResolver {
 
 			// Parse each package pattern and read package.json
 			for (const pattern of config.packages) {
-				// For now, assume simple glob patterns like "code/shared"
-				// Remove glob wildcards for simple case
-				const packagePath = path.join(workspaceRoot, pattern.replace(/[*]/g, ''));
+				// Expand glob patterns to actual directories
+				const packageDirs = this.expandGlobPattern(workspaceRoot, pattern);
 
-				const packageJsonPath = path.join(packagePath, 'package.json');
-				if (!fs.existsSync(packageJsonPath)) continue;
+				for (const packagePath of packageDirs) {
+					const packageJsonPath = path.join(packagePath, 'package.json');
+					if (!fs.existsSync(packageJsonPath)) continue;
 
-				try {
-					const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-					if (packageJson.name)
-						packages.set(packageJson.name, {
-							name: packageJson.name,
-							directory: packagePath,
-							packageJsonPath
-						});
-				} catch {
-					// Skip packages with invalid package.json
-					continue;
+					try {
+						const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+						if (packageJson.name)
+							packages.set(packageJson.name, {
+								name: packageJson.name,
+								directory: packagePath,
+								packageJsonPath
+							});
+					} catch {
+						// Skip packages with invalid package.json
+						continue;
+					}
 				}
 			}
 
@@ -311,6 +312,51 @@ export class PathResolver {
 		} catch {
 			return null;
 		}
+	}
+
+	/**
+	 * Expand simple glob patterns like "packages/*" or "code/shared".
+	 * Supports basic wildcards: single asterisk (*) for one level.
+	 * @param workspaceRoot Workspace root directory
+	 * @param pattern Glob pattern from pnpm-workspace.yaml
+	 * @returns Array of absolute directory paths matching the pattern
+	 */
+	private expandGlobPattern(workspaceRoot: string, pattern: string): string[] {
+		// Handle exact paths (no wildcards)
+		if (!pattern.includes('*')) {
+			const exactPath = path.join(workspaceRoot, pattern);
+			return fs.existsSync(exactPath) ? [exactPath] : [];
+		}
+
+		// Handle simple glob patterns like "packages/*" or "apps/*"
+		// Split pattern into parts (e.g., "packages/*" -> ["packages", "*"])
+		const parts = pattern.split('/');
+		let currentPaths = [workspaceRoot];
+
+		for (const part of parts)
+			if (part === '*') {
+				// Expand wildcard: read all subdirectories from current paths
+				const expandedPaths: string[] = [];
+				for (const currentPath of currentPaths) {
+					if (!fs.existsSync(currentPath)) continue;
+					try {
+						const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+						for (const entry of entries)
+							if (entry.isDirectory())
+								expandedPaths.push(path.join(currentPath, entry.name));
+					} catch {
+						// Skip directories we can't read
+						continue;
+					}
+				}
+				currentPaths = expandedPaths;
+			} else {
+				// Regular path segment: append to all current paths
+				currentPaths = currentPaths.map((p) => path.join(p, part));
+			}
+
+		// Filter to only existing directories
+		return currentPaths.filter((p) => fs.existsSync(p));
 	}
 
 	/**
