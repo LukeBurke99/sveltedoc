@@ -66,11 +66,25 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 - Commands:
     - Clear Cache: clears all cached component prop data
     - Show Output: focuses the OUTPUT channel for diagnostics
-- Unit tests for prop parser (propParser.properties.test.ts and propParser.defaults.test.ts) and script extraction (extractor.scripts.test.ts and extractor.imports.test.ts)
+- Unit tests (in tests/) for prop parser (propParser.properties.test.ts and propParser.defaults.test.ts) and script extraction (extractor.scripts.test.ts and extractor.imports.test.ts)
 
 **❌ Not Yet Implemented:**
 
 - Settings for hiding internal props (underscore prefix) or grouping by category
+
+## Project Structure
+
+```
+src/              - Source code
+  extension.ts    - Main entry point
+  types.ts        - All TypeScript types
+  classes/        - Class-based modules (scanners, caches, services, formatters)
+  parsers/        - Parsing logic (propParser, scriptParser, tagParser)
+  utils/          - Utilities (pathResolver, settings, extractor, etc.)
+  interfaces/     - VSCode interface stubs
+tests/            - Unit tests (at project root)
+  fixtures/       - Test fixtures (path-alias-project, pnpm-workspace-project)
+```
 
 ## Key Architecture
 
@@ -240,5 +254,3 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 ## If Blocked
 
 State blockers clearly; suggest next actionable step or dependency.
-
-_Last updated: 2025-11-28 (Bundling implemented: esbuild for production builds, shamefully-hoist removed from .npmrc)_

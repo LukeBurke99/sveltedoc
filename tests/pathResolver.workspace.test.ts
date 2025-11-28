@@ -1,7 +1,7 @@
 import * as assert from 'node:assert';
 import * as path from 'node:path';
-import { PathResolverCache } from '../classes/caches/PathResolverCache';
-import { PathResolver } from '../utils/pathResolver';
+import { PathResolverCache } from '../src/classes/caches/PathResolverCache';
+import { PathResolver } from '../src/utils/pathResolver';
 
 // Mock LoggingService for tests (avoid vscode dependency)
 class MockLogger {

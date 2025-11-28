@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { extractScriptBlocksFromText } from '../utils/extractor';
+import { extractScriptBlocksFromText } from '../src/utils/extractor';
 
 describe('Extractor: Script Blocks', () => {
 	it('1. File without script tags', () => {

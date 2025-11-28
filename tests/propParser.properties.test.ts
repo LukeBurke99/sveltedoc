@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { parsePropsFromScriptBlocks } from '../parsers/propParser';
-import { ScriptBlock } from '../types';
+import { parsePropsFromScriptBlocks } from '../src/parsers/propParser';
+import { ScriptBlock } from '../src/types';
 
 // Test normalization settings - set to true for consistent test behavior
 const TEST_NORMALISE_COMMENT = true;
@@ -23,10 +23,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 			}
 		];
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'active');
@@ -48,10 +50,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 			}
 		];
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'active');
@@ -75,10 +79,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'value');
@@ -102,10 +108,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 			}
 		];
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'id');
@@ -130,10 +138,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 			}
 		];
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'id');
@@ -167,10 +177,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 			}
 		];
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 4);
 
@@ -203,10 +215,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'count');
@@ -222,7 +236,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([block], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 0);
 			assert.strictEqual(result.inherits.length, 0);
@@ -236,7 +255,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([block], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 0);
 			assert.strictEqual(result.inherits.length, 0);
@@ -251,10 +275,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'id');
@@ -284,10 +310,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: PropsA = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: PropsA = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 1);
 			assert.strictEqual(result.props[0].name, 'name');
@@ -318,13 +346,18 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		// Test both union and intersection
 		['|', '&'].forEach((operator) => {
 			blocks.forEach((block) => {
-				const result = parsePropsFromScriptBlocks([
-					block,
-					{
-						content: `const { ...rest }: TypeA ${operator} TypeB = $props();`,
-						attributes: {}
-					}
-				], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+				const result = parsePropsFromScriptBlocks(
+					[
+						block,
+						{
+							content: `const { ...rest }: TypeA ${operator} TypeB = $props();`,
+							attributes: {}
+						}
+					],
+					TEST_NORMALISE_COMMENT,
+					TEST_NORMALISE_TYPE,
+					TEST_NORMALISE_DEFAULT_VALUE
+				);
 
 				assert.strictEqual(result.props.length, 2);
 
@@ -369,13 +402,18 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 
 		['|', '&'].forEach((operator) => {
 			blocks.forEach((block) => {
-				const result = parsePropsFromScriptBlocks([
-					block,
-					{
-						content: `const { ...rest }: LocalProps ${operator} ImportedTypeA ${operator} ImportedTypeB = $props();`,
-						attributes: {}
-					}
-				], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+				const result = parsePropsFromScriptBlocks(
+					[
+						block,
+						{
+							content: `const { ...rest }: LocalProps ${operator} ImportedTypeA ${operator} ImportedTypeB = $props();`,
+							attributes: {}
+						}
+					],
+					TEST_NORMALISE_COMMENT,
+					TEST_NORMALISE_TYPE,
+					TEST_NORMALISE_DEFAULT_VALUE
+				);
 
 				assert.strictEqual(result.props.length, 2);
 
@@ -409,10 +447,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest } : Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest } : Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 3);
 
@@ -446,10 +486,11 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{
-					content: `
+			const result = parsePropsFromScriptBlocks(
+				[
+					block,
+					{
+						content: `
 						let {
 							name,
 							age,
@@ -457,9 +498,13 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 							...rest
 						} : Props = $props()
 					`,
-					attributes: {}
-				}
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+						attributes: {}
+					}
+				],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			assert.strictEqual(result.props.length, 3);
 
@@ -604,10 +649,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([
-				block,
-				{ content: 'const { ...rest }: Props = $props();', attributes: {} }
-			], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block, { content: 'const { ...rest }: Props = $props();', attributes: {} }],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			// Should have 13 properties total
 			assert.strictEqual(result.props.length, 14);
@@ -847,7 +894,12 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		const blocks: ScriptBlock[] = [{ content: typeContent, attributes: {} }];
 
 		blocks.forEach((block) => {
-			const result = parsePropsFromScriptBlocks([block], TEST_NORMALISE_COMMENT, TEST_NORMALISE_TYPE, TEST_NORMALISE_DEFAULT_VALUE);
+			const result = parsePropsFromScriptBlocks(
+				[block],
+				TEST_NORMALISE_COMMENT,
+				TEST_NORMALISE_TYPE,
+				TEST_NORMALISE_DEFAULT_VALUE
+			);
 
 			// Should have 13 properties total
 			assert.strictEqual(result.props.length, 14);

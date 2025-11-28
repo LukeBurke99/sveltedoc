@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import type { Position, TextDocument } from '../interfaces/vscode';
-import { getTagNameAtPosition } from '../parsers/tagParser';
+import type { Position, TextDocument } from '../src/interfaces/vscode';
+import { getTagNameAtPosition } from '../src/parsers/tagParser';
 
 /**
  * Create a minimal mock TextDocument for testing tag parsing

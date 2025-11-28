@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { categorizeType, getPrimitiveOrder } from '../utils/propSorting';
+import { categorizeType, getPrimitiveOrder } from '../src/utils/propSorting';
 
 /**
  * Test type categorization logic used in 'type' ordering mode.

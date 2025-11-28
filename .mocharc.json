@@ -1,8 +1,8 @@
 {
 	"require": ["ts-node/register"],
 	"extensions": ["ts"],
-	"spec": ["src/test/**/*.test.ts"],
-	"ignore": ["src/test/fixtures/**/*", "node_modules/**/*"],
+	"spec": ["tests/**/*.test.ts"],
+	"ignore": ["tests/fixtures/**/*", "node_modules/**/*"],
 	"ui": "bdd",
 	"timeout": 20000
 }

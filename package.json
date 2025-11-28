@@ -154,7 +154,7 @@
 			"src/**/*.ts"
 		],
 		"exclude": [
-			"src/test/**",
+			"tests/**",
 			"src/types.ts"
 		],
 		"reporter": [
@@ -170,9 +170,9 @@
 		"build:prod": "node esbuild.mjs --production",
 		"analyze": "node esbuild.mjs && echo \"\"\"Bundle created! Check the output above for size analysis.\"\"\"",
 		"lint": "eslint src --fix --cache --cache-location .eslintcache",
-		"pretest": "pnpm run compile && pnpm run lint",
-		"test": "mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
-		"coverage": "c8 mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
+		"pretest": "pnpm run lint",
+		"test": "mocha -r ts-node/register --ui bdd --timeout 20000 \"tests/**/*.test.ts\"",
+		"coverage": "c8 mocha -r ts-node/register --ui bdd --timeout 20000 \"tests/**/*.test.ts\"",
 		"prerelease": "pnpm test && npx rimraf out && pnpm run build:prod",
 		"release": "vsce publish --no-dependencies",
 		"release:ci": "semantic-release",

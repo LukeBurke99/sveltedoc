@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { parsePropsFromScriptBlocks } from '../parsers/propParser';
-import { ScriptBlock } from '../types';
+import { parsePropsFromScriptBlocks } from '../src/parsers/propParser';
+import { ScriptBlock } from '../src/types';
 
 // Test normalization settings - set to true for consistent test behavior
 const TEST_NORMALISE_COMMENT = true;

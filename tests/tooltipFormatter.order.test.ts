@@ -1,6 +1,6 @@
 import * as assert from 'assert';
-import { PropInfo } from '../types';
-import { sortProps } from '../utils/propSorting';
+import { PropInfo } from '../src/types';
+import { sortProps } from '../src/utils/propSorting';
 
 /**
  * Test tooltip ordering modes: normal, alphabetical, required, type

@@ -1,5 +1,8 @@
 import * as assert from 'assert';
-import { extractImportsFromScriptBlocks, extractScriptBlocksFromText } from '../utils/extractor';
+import {
+	extractImportsFromScriptBlocks,
+	extractScriptBlocksFromText
+} from '../src/utils/extractor';
 
 describe('Extractor: Import Statements', () => {
 	it('1. No imports in script block', () => {
