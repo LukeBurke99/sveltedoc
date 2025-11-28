@@ -151,8 +151,26 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 - **ALL types must be in `types.ts`** with JSDoc describing their purpose
 - Prefer regex over AST parsing (lightweight)
 - Single-line if/else when no braces needed (linter enforced)
-- Always compile after edits: `pnpm run compile`
+- **Development**: `pnpm run compile` for TypeScript compilation (fast iteration)
+- **Production**: `pnpm run build` or `pnpm run build:prod` for bundled builds
 - Keep Markdown output compact (hover size limits)
+
+## Build System
+
+- **Development**: TypeScript compiler (`tsc`) for fast iteration and debugging
+    - `pnpm run compile` - compile TypeScript to JavaScript (not bundled)
+    - Tests always use TypeScript compiler (via ts-node/mocha)
+- **Production**: esbuild bundler for optimized marketplace releases
+    - `pnpm run build` - bundle with source maps (development build)
+    - `pnpm run build:prod` - bundle with minification (production release)
+    - `pnpm run analyze` - view bundle size breakdown
+    - **Benefits**: 80-90% size reduction, tree-shaking, single output file
+    - **Configuration**: `esbuild.mjs` (documented with extensive comments)
+- **Packaging**:
+    - All production builds use `--no-dependencies` flag (dependencies are bundled)
+    - No `shamefully-hoist` needed in .npmrc (pnpm works natively with bundled builds)
+    - VSIX includes only bundled `out/extension.js` + metadata files
+    - Size: ~11 files, ~667KB (vs 30+ files, 700KB+ unbundled)
 
 ## Tooltip Format (Current)
 
@@ -223,4 +241,4 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 
 State blockers clearly; suggest next actionable step or dependency.
 
-_Last updated: 2025-01-26 (Phase 1B: Workspace package resolution with barrel files implemented)_
+_Last updated: 2025-11-28 (Bundling implemented: esbuild for production builds, shamefully-hoist removed from .npmrc)_

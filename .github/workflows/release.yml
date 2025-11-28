@@ -42,6 +42,7 @@ jobs:
 
             - name: Run prerelease checks
               # Run tests/lint/build before releasing (configured in package.json -> scripts.prerelease)
+              # This now uses esbuild to bundle the extension for production
               run: pnpm run prerelease
 
             - name: Release

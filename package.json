@@ -166,15 +166,18 @@
 	"scripts": {
 		"clean": "npx rimraf out node_modules coverage .eslintcache",
 		"compile": "tsc -p ./",
+		"build": "node esbuild.mjs",
+		"build:prod": "node esbuild.mjs --production",
+		"analyze": "node esbuild.mjs && echo \"\"\"Bundle created! Check the output above for size analysis.\"\"\"",
 		"lint": "eslint src --fix --cache --cache-location .eslintcache",
 		"pretest": "pnpm run compile && pnpm run lint",
 		"test": "mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
 		"coverage": "c8 mocha -r ts-node/register --ui bdd --timeout 20000 \"src/test/**/*.test.ts\"",
-		"prerelease": "pnpm test",
-		"release": "vsce publish",
+		"prerelease": "pnpm test && npx rimraf out && pnpm run build:prod",
+		"release": "vsce publish --no-dependencies",
 		"release:ci": "semantic-release",
-		"prepackage": "pnpm test && node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
-		"package": "vsce package -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
+		"prepackage": "pnpm test && npx rimraf out && pnpm run build:prod && node -e \"require('fs').mkdirSync('releases',{recursive:true})\"",
+		"package": "vsce package --no-dependencies -o \"releases/%npm_package_name%-%npm_package_version%.vsix\""
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.3.2",
@@ -196,6 +199,7 @@
 		"@vscode/vsce": "^3.6.0",
 		"c8": "^10.1.3",
 		"conventional-changelog-conventionalcommits": "^9.1.0",
+		"esbuild": "^0.27.0",
 		"eslint": "^9.32.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-unicorn": "^60.0.0",
@@ -211,7 +215,7 @@
 	"packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
 	"dependencies": {
 		"get-tsconfig": "^4.13.0",
-		"yaml": "^2.8.1",
-		"vscode-nls": "^5.2.0"
+		"vscode-nls": "^5.2.0",
+		"yaml": "^2.8.1"
 	}
 }

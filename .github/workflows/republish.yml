@@ -33,12 +33,12 @@ jobs:
 
             - name: Build and package extension
               run: |
-                  pnpm run compile
+                  pnpm run build:prod
                   mkdir -p releases
-                  npx vsce package -o releases/sveltedoc-${{ inputs.version }}.vsix
+                  npx vsce package --no-dependencies -o releases/sveltedoc-${{ inputs.version }}.vsix
 
             - name: Publish to VS Code Marketplace
               env:
                   VSCE_PAT: ${{ secrets.VSCE_PAT }}
               run: |
-                  npx vsce publish --packagePath ./releases/sveltedoc-${{ inputs.version }}.vsix
+                  npx vsce publish --no-dependencies --packagePath ./releases/sveltedoc-${{ inputs.version }}.vsix

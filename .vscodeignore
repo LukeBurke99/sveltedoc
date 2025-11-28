@@ -1,14 +1,19 @@
 # Ignores files for VS Code extension packaging
 # See https://code.visualstudio.com/api/working-with-extensions/publishing-extension#excluding-files
 # ---
+# IMPORTANT: Extension is bundled with esbuild. Only out/extension.js is needed at runtime.
+# All dependencies are bundled into extension.js, so node_modules is excluded.
+
 .vscode/**
 .vscode-test/**
 src/**
+node_modules/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
 **/tsconfig.json
 **/eslint.config.js
+esbuild.mjs
 **/*.map
 **/*.ts
 **/.vscode-test.*
