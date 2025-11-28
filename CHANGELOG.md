@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.2](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.1...v2.0.2) (2025-11-28)
+
+### 🐛 Bug Fixes
+
+* Optimize packages and file sizes. ([1b0a448](https://github.com/LukeBurke99/sveltedoc/commit/1b0a44827b141a0bb16c1d949de9987388aea0ce))
+
 ## [2.0.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.0...v2.0.1) (2025-11-27)
 
 ### 🐛 Bug Fixes
