@@ -26,7 +26,9 @@ export function activate(context: vscode.ExtensionContext): void {
 	const pathResolver = new PathResolver(
 		cache.getPathResolverCache(),
 		logger,
-		Settings.getDetailedResolverLogging()
+		Settings.getDetailedResolverLogging(),
+		Settings.getBarrelFileMaxDepth(),
+		Settings.getBarrelFileNames()
 	);
 
 	//#region Simple Event Listeners
@@ -42,6 +44,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		if (e.affectsConfiguration('sveltedoc')) {
 			cache.clear();
 			pathResolver.setDetailedLogging(Settings.getDetailedResolverLogging());
+			pathResolver.setMaxBarrelDepth(Settings.getBarrelFileMaxDepth());
+			pathResolver.setBarrelFileNames(Settings.getBarrelFileNames());
 			logger.logSettingsChanged();
 		}
 	});
@@ -265,13 +269,15 @@ export function getPropsForHoveredComponent(
 	const normaliseComment = Settings.getNormaliseComment();
 	const normaliseType = Settings.getNormaliseType();
 	const normaliseDefaultValue = Settings.getNormaliseDefaultValue();
+	const fallbackTypes = Settings.getFallbackTypes();
 
 	// 6) Parse props using heuristic runes-mode parser
 	const result = parsePropsFromScriptBlocks(
 		blocks,
 		normaliseComment,
 		normaliseType,
-		normaliseDefaultValue
+		normaliseDefaultValue,
+		fallbackTypes
 	);
 	if (!result.props.length) {
 		const failureResult: PropExtractionResult = {

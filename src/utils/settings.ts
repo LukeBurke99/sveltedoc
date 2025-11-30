@@ -75,4 +75,60 @@ export class Settings {
 		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
 		return config.get<boolean>('detailedResolverLogging', true);
 	}
+
+	/**
+	 * Get fallback type mappings for unknown property types.
+	 * Validates that all keys and values are non-empty strings.
+	 */
+	public static getFallbackTypes(): Record<string, string> {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		const value = config.get<Record<string, string>>('fallbackTypes', {
+			children: 'Snippet',
+			class: 'string'
+		});
+
+		// Validate: ensure object with non-empty string keys and values
+		if (typeof value !== 'object' || Array.isArray(value))
+			return { children: 'Snippet', class: 'string' };
+
+		const validated: Record<string, string> = {};
+		for (const [key, val] of Object.entries(value))
+			if (
+				typeof key === 'string' &&
+				key.trim() !== '' &&
+				typeof val === 'string' &&
+				val.trim() !== ''
+			)
+				validated[key] = val;
+
+		return validated;
+	}
+
+	/**
+	 * Get maximum depth for barrel file resolution.
+	 * Enforces bounds: minimum 0, maximum 10.
+	 */
+	public static getBarrelFileMaxDepth(): number {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		const value = config.get<number>('barrelFileMaxDepth', 3);
+		// Enforce bounds: 0-10
+		return Math.max(0, Math.min(10, value));
+	}
+
+	/**
+	 * Get list of file names to treat as barrel files.
+	 * Validates that all entries are non-empty strings.
+	 */
+	public static getBarrelFileNames(): string[] {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		const value = config.get<string[]>('barrelFileNames', ['index', 'main']);
+
+		// Validate: ensure array with non-empty string values
+		if (!Array.isArray(value)) return ['index', 'main'];
+
+		const validated = value.filter((name) => typeof name === 'string' && name.trim() !== '');
+
+		// Return default if no valid names
+		return validated.length > 0 ? validated : ['index', 'main'];
+	}
 }

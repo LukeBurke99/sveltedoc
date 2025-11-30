@@ -174,6 +174,26 @@ describe('PathResolver - Workspace Package Resolution', () => {
 		assert.ok(result.includes('src'), 'Should use svelte condition (src) not default (dist)');
 		assert.ok(!result.includes('dist'), 'Should not use default condition (dist)');
 	});
+
+	it('14. Should resolve component from custom barrel file name (core.ts)', () => {
+		// Test resolving from 'core.ts' barrel file (not index.ts)
+		// Requires barrelFileNames setting to include 'core'
+		const resolverWithCore = new PathResolver(cache, new MockLogger() as any, false, 5, [
+			'index',
+			'main',
+			'core'
+		]);
+
+		// Alert component is exported from core.ts barrel
+		const result = resolverWithCore.resolve(budgetAppPage, '@budget-suite/shared', 'Alert');
+
+		assert.ok(result, 'Should resolve Alert component from core.ts barrel');
+		assert.ok(result.endsWith('Alert.svelte'), 'Should resolve to Alert.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Alert.svelte')),
+			'Should be in components directory'
+		);
+	});
 });
 
 describe('PathResolver - Workspace GLOB Package Resolution', () => {

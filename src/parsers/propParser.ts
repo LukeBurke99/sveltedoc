@@ -576,7 +576,8 @@ function extractDestructurings(
 function mergeTypeAndDestructuring(
 	typeMap: TypeMap,
 	destMap: Partial<Record<string, { defaultValue?: string; bindable: boolean }>>,
-	typeNamesToUse: string[]
+	typeNamesToUse: string[],
+	fallbackTypes: Record<string, string> = {}
 ): { props: PropInfo[]; inherits: string[] } {
 	const localTypes: TypeDefinition[] = [];
 	const externalTypes: string[] = [];
@@ -618,6 +619,8 @@ function mergeTypeAndDestructuring(
 			base.required = t.required;
 			if (t.comment) base.comment = t.comment;
 		}
+		// Apply fallback types if type is still unknown
+		if (base.type === 'unknown' && fallbackTypes[name]) base.type = fallbackTypes[name];
 		if (d) {
 			base.bindable = d.bindable;
 			if (d.defaultValue) base.defaultValue = d.defaultValue;
@@ -642,7 +645,8 @@ export function parsePropsFromScriptBlocks(
 	blocks: ScriptBlock[],
 	normaliseComment: boolean = false,
 	normaliseType: boolean = true,
-	normaliseDefaultValue: boolean = true
+	normaliseDefaultValue: boolean = true,
+	fallbackTypes: Record<string, string> = {}
 ): {
 	props: PropInfo[];
 	inherits: string[];
@@ -655,5 +659,5 @@ export function parsePropsFromScriptBlocks(
 	const typeMaps = extractTypeMaps(blocks, normaliseComment, normaliseType);
 	const destructurings = extractDestructurings(blocks, normaliseDefaultValue);
 
-	return mergeTypeAndDestructuring(typeMaps, destructurings, typeNames);
+	return mergeTypeAndDestructuring(typeMaps, destructurings, typeNames, fallbackTypes);
 }

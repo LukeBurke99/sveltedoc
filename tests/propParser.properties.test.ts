@@ -1406,12 +1406,75 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		assert.strictEqual(modeProp.type, '"controlled" | "uncontrolled"');
 		assert.strictEqual(modeProp.required, true);
 	});
-});
 
-// Add some tests for the following structure (look at how the function is defined):
-/**
- * interface Props {
-		items: Item[];
-		select(item: Item): void;
-	}
- */
+	it('19. Fallback types applied when prop type is unknown', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { label: string; }',
+				attributes: {}
+			},
+			{
+				content: 'const { label, children, class: className }: Props = $props();',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			blocks,
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE,
+			{ children: 'Snippet', class: 'string' }
+		);
+
+		assert.strictEqual(result.props.length, 3);
+
+		// label should have actual type from interface
+		const labelProp = result.props.find((p) => p.name === 'label');
+		assert.ok(labelProp);
+		assert.strictEqual(labelProp.type, 'string');
+
+		// children should get fallback type Snippet (not in interface)
+		const childrenProp = result.props.find((p) => p.name === 'children');
+		assert.ok(childrenProp);
+		assert.strictEqual(childrenProp.type, 'Snippet');
+
+		// class should get fallback type string (destructured as className)
+		const classProp = result.props.find((p) => p.name === 'class');
+		assert.ok(classProp);
+		assert.strictEqual(classProp.type, 'string');
+	});
+
+	it('20. Fallback types not applied when prop has explicit type', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { children: HTMLElement; class: number; }',
+				attributes: {}
+			},
+			{
+				content: 'const { children, class: className }: Props = $props();',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			blocks,
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE,
+			{ children: 'Snippet', class: 'string' }
+		);
+
+		assert.strictEqual(result.props.length, 2);
+
+		// children should keep its explicit HTMLElement type, not fallback to Snippet
+		const childrenProp = result.props.find((p) => p.name === 'children');
+		assert.ok(childrenProp);
+		assert.strictEqual(childrenProp.type, 'HTMLElement');
+
+		// class should keep its explicit number type, not fallback to string
+		const classProp = result.props.find((p) => p.name === 'class');
+		assert.ok(classProp);
+		assert.strictEqual(classProp.type, 'number');
+	});
+});

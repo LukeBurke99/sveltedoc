@@ -144,6 +144,35 @@
 					"default": true,
 					"description": "%settings.detailedResolverLogging.description%",
 					"order": 6
+				},
+				"sveltedoc.fallbackTypes": {
+					"type": "object",
+					"default": {
+						"children": "Snippet",
+						"class": "string"
+					},
+					"description": "%settings.fallbackTypes.description%",
+					"order": 7
+				},
+				"sveltedoc.barrelFileMaxDepth": {
+					"type": "number",
+					"default": 3,
+					"minimum": 0,
+					"maximum": 10,
+					"description": "%settings.barrelFileMaxDepth.description%",
+					"order": 8
+				},
+				"sveltedoc.barrelFileNames": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"index",
+						"main"
+					],
+					"description": "%settings.barrelFileNames.description%",
+					"order": 9
 				}
 			}
 		}

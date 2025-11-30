@@ -203,6 +203,8 @@ export { Button } from './Button.svelte';
 export { Card } from './Card.svelte';
 ```
 
+> **Tip:** Use custom barrel file names like `core.ts` or `main.ts` instead of `index.ts` to organize exports. Configure recognized barrel file names via the `barrelFileNames` setting (default: `["index", "main"]`).
+
 **5. Use in consuming packages:**
 ```svelte
 <script lang="ts">
@@ -215,7 +217,7 @@ export { Card } from './Card.svelte';
 <Card title="My Card" />
 ```
 
-> **Note:** SvelteDoc automatically resolves barrel files (re-exports) up to 2 levels deep and caches results for performance.
+> **Note:** SvelteDoc automatically resolves barrel files (re-exports) with configurable depth (default 3 levels, adjustable via `barrelFileMaxDepth` setting) and customizable barrel file names (default `["index", "main"]`, adjustable via `barrelFileNames` setting). Results are cached for performance.
 
 ---
 
@@ -236,6 +238,12 @@ All settings are under the `sveltedoc` namespace:
 - **`tooltipFormat`** (string, default: `'code-block'`) — Tooltip format: `bullet-list`, `table`, or `code-block`.
 
 - **`detailedResolverLogging`** (boolean, default: `true`) — Enable detailed logging for import resolution debugging. Check Output panel (View → Output → SvelteDoc).
+
+- **`fallbackTypes`** (object, default: `{ "children": "Snippet", "class": "string" }`) — Map of property names to types used when a prop has an 'unknown' type. Useful for common props like 'children' or 'class' that are often destructured without type annotations.
+
+- **`barrelFileMaxDepth`** (number, default: `3`) — Maximum depth for resolving barrel files (index re-exports) in workspace packages. Range: 0-10. ⚠️ Warning: Higher values may slow down component resolution. Set to 0 to disable barrel file resolution.
+
+- **`barrelFileNames`** (array, default: `["index", "main"]`) — List of file names (without extension) to recognize as barrel files. Files matching these names will be checked for re-export patterns when resolving workspace package imports. Use `["*"]` to check any `.ts`/`.js` file for re-exports. ⚠️ Warning: Using wildcard `*` may impact performance on large projects.
 
 ---
 

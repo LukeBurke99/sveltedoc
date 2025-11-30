@@ -15,15 +15,21 @@ export class PathResolver {
 	private cache: PathResolverCache;
 	private logger: LoggingService;
 	private detailedLogging: boolean;
+	private maxBarrelDepth: number;
+	private barrelFileNames: string[];
 
 	public constructor(
 		cache: PathResolverCache,
 		logger: LoggingService,
-		detailedLogging: boolean = true
+		detailedLogging: boolean = true,
+		maxBarrelDepth: number = 3,
+		barrelFileNames: string[] = ['index', 'main']
 	) {
 		this.cache = cache;
 		this.logger = logger;
 		this.detailedLogging = detailedLogging;
+		this.maxBarrelDepth = maxBarrelDepth;
+		this.barrelFileNames = barrelFileNames;
 	}
 
 	/**
@@ -518,9 +524,8 @@ export class PathResolver {
 					// Check if resolved path exists
 					if (!fs.existsSync(resolvedPath)) continue;
 
-					// Check if this is another index file (nested barrel)
-					const fileName = path.basename(resolvedPath, path.extname(resolvedPath));
-					if (fileName === 'index') {
+					// Check if this is another barrel file (nested barrel)
+					if (this.isBarrelFile(resolvedPath)) {
 						// Recurse into nested barrel
 						const nestedResult = this.resolveBarrelFile(
 							resolvedPath,
@@ -531,9 +536,7 @@ export class PathResolver {
 						if (nestedResult)
 							return nestedResult; // Found it!
 						else continue; // Not in this barrel, try next one
-					}
-
-					// Found the component file
+					} // Found the component file
 					const durationMs = Math.round(performance.now() - startTime);
 					return {
 						path: resolvedPath,
@@ -567,9 +570,8 @@ export class PathResolver {
 			// Check if resolved path exists
 			if (!fs.existsSync(resolvedPath)) return null;
 
-			// Check if this is another index file (nested barrel)
-			const fileName = path.basename(resolvedPath, path.extname(resolvedPath));
-			if (fileName === 'index')
+			// Check if this is another barrel file (nested barrel)
+			if (this.isBarrelFile(resolvedPath))
 				// Recurse into nested barrel
 				return this.resolveBarrelFile(
 					resolvedPath,
@@ -674,10 +676,14 @@ export class PathResolver {
 
 		// 5. Check if result is a barrel file and component name is provided
 		let barrelDepth = 0;
-		if (componentName) {
-			const fileName = path.basename(resolvedPath, path.extname(resolvedPath));
-			if (fileName === 'index') {
-				const barrelResult = this.resolveBarrelFile(resolvedPath, componentName);
+		if (componentName && this.maxBarrelDepth > 0)
+			if (this.isBarrelFile(resolvedPath)) {
+				const barrelResult = this.resolveBarrelFile(
+					resolvedPath,
+					componentName,
+					0,
+					this.maxBarrelDepth
+				);
 				if (barrelResult) {
 					resolvedPath = barrelResult.path;
 					barrelDepth = barrelResult.depth;
@@ -695,7 +701,6 @@ export class PathResolver {
 					}
 				}
 			}
-		}
 
 		// 6. Cache the result
 		const cacheKey = `${specifier}|${fromFile}|${componentName ?? ''}`;
@@ -715,6 +720,45 @@ export class PathResolver {
 	 */
 	public setDetailedLogging(enabled: boolean): void {
 		this.detailedLogging = enabled;
+	}
+
+	/**
+	 * Update the maximum barrel file depth setting.
+	 * @param depth Maximum depth for barrel file resolution
+	 */
+	public setMaxBarrelDepth(depth: number): void {
+		this.maxBarrelDepth = depth;
+	}
+
+	/**
+	 * Update the barrel file names setting.
+	 * @param names List of file names to treat as barrel files
+	 */
+	public setBarrelFileNames(names: string[]): void {
+		this.barrelFileNames = names;
+	}
+
+	/**
+	 * Check if a file path represents a barrel file based on configured names.
+	 * Supports wildcard '*' to match any .ts/.js file with re-export patterns.
+	 * @param filePath Absolute path to the file
+	 * @returns True if file should be treated as a barrel file
+	 */
+	private isBarrelFile(filePath: string): boolean {
+		const fileName = path.basename(filePath, path.extname(filePath)).toLowerCase();
+
+		// Check for wildcard - if present, verify file has re-export patterns
+		if (this.barrelFileNames.includes('*'))
+			try {
+				const content = fs.readFileSync(filePath, 'utf8');
+				// Check if file contains export patterns (export { ... } from or export * from)
+				return /export\s+(?:\{[^}]*\}|\*)\s+from\s+['"]/.test(content);
+			} catch {
+				return false;
+			}
+
+		// Case-insensitive matching against configured names
+		return this.barrelFileNames.some((name) => name.toLowerCase() === fileName);
 	}
 
 	/**
