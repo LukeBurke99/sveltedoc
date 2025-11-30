@@ -30,6 +30,7 @@ pnpm-lock.yaml
 # Ignore coverage and test output
 coverage/
 **/test/
+tests/
 
 # Ignore GitHub workflows and release config
 .github/
