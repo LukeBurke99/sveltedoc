@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.3](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.2...v2.0.3) (2025-11-28)
+
+### 🐛 Bug Fixes
+
+* Fix issue with glob patterns not being resolved correctly ([c584a3e](https://github.com/LukeBurke99/sveltedoc/commit/c584a3e797ed3e4da781af9c156413253d36456d))
+
 ## [2.0.2](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.1...v2.0.2) (2025-11-28)
 
 ### 🐛 Bug Fixes
