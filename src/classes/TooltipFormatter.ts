@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 
-import { PropExtractionResult, PropInfo, TooltipFormat, TooltipOrder } from '../types';
+import {
+	FormatSettings,
+	PropExtractionResult,
+	PropInfo,
+	TooltipFormat,
+	TooltipOrder
+} from '../types';
 import { t } from '../utils/localization';
 import { sortProps } from '../utils/propSorting';
 
@@ -15,17 +21,19 @@ export class TooltipFormatter {
 	 * @param props The list of PropInfo objects
 	 * @param inherits Optional list of inherited types/interfaces
 	 * @param order The sorting preference
+	 * @param settings Visibility settings for tooltip formatting
 	 */
-	public static displayPropsAsList(
+	private static displayPropsAsList(
 		props: PropInfo[],
-		inherits?: string[],
-		order: TooltipOrder = 'required'
+		inherits: string[] | undefined,
+		order: TooltipOrder,
+		settings: FormatSettings
 	): vscode.MarkdownString {
 		const md = new vscode.MarkdownString();
 		md.isTrusted = true;
 
-		// Show inherited types if any
-		if (inherits && inherits.length > 0) {
+		// Show inherited types if any and setting enabled
+		if (settings.showInheritance && inherits && inherits.length > 0) {
 			const inheritsList = inherits.map((t) => `\`${t}\``).join(', ');
 			md.appendMarkdown(`**Extends:** ${inheritsList}\n\n`);
 		}
@@ -40,14 +48,17 @@ export class TooltipFormatter {
 			if (prop.bindable) emojis.push('🔗');
 
 			const emojiPrefix = emojis.length > 0 ? emojis.join(' ') + ' ' : '';
-			const typeFormatted = `**${prop.type}**`;
-			let line = `- ${emojiPrefix}\`${prop.name}\`: ${typeFormatted}`;
+			const typeFormatted = settings.showTypes ? `**${prop.type}**` : '';
+			let line = `- ${emojiPrefix}\`${prop.name}\``;
 
-			// Add default value if present
-			if (prop.defaultValue) line += ` = \`${prop.defaultValue}\``;
+			// Add type if enabled
+			if (settings.showTypes && typeFormatted) line += `: ${typeFormatted}`;
 
-			// Add comment if present
-			if (prop.comment) line += `\n  - _${prop.comment}_`;
+			// Add default value if present and enabled
+			if (settings.showDefaults && prop.defaultValue) line += ` = \`${prop.defaultValue}\``;
+
+			// Add comment if present and enabled
+			if (settings.showComments && prop.comment) line += `\n  - _${prop.comment}_`;
 
 			md.appendMarkdown(line + '\n');
 		}
@@ -60,16 +71,18 @@ export class TooltipFormatter {
 	 * @param props The list of PropInfo objects
 	 * @param inherits Optional list of inherited types/interfaces
 	 * @param order The sorting preference
+	 * @param settings Visibility settings for tooltip formatting
 	 */
-	public static displayPropsAsTable(
+	private static displayPropsAsTable(
 		props: PropInfo[],
-		inherits?: string[],
-		order: TooltipOrder = 'required'
+		inherits: string[] | undefined,
+		order: TooltipOrder,
+		settings: FormatSettings
 	): vscode.MarkdownString {
 		const md = new vscode.MarkdownString();
 		md.isTrusted = true;
 
-		if (inherits && inherits.length > 0) {
+		if (settings.showInheritance && inherits && inherits.length > 0) {
 			const inheritsList = inherits.map((t) => `\`${t}\``).join(', ');
 			md.appendMarkdown(`**Extends:** ${inheritsList}\n\n`);
 		}
@@ -77,21 +90,40 @@ export class TooltipFormatter {
 		// Sort props according to order preference
 		const sortedProps = sortProps(props, order);
 
-		// Create table header
-		md.appendMarkdown('| Property | Type | Default | Notes |\n');
-		md.appendMarkdown('|----------|------|---------|-------|\n');
+		// Build table header dynamically based on enabled columns
+		const headers: string[] = ['Property'];
+		if (settings.showTypes) headers.push('Type');
+		if (settings.showDefaults) headers.push('Default');
+		if (settings.showComments) headers.push('Notes');
+
+		// If only Property column, show minimal table
+		if (headers.length === 1) {
+			md.appendMarkdown('| Property |\n');
+			md.appendMarkdown('|----------|\n');
+		} else {
+			md.appendMarkdown(`| ${headers.join(' | ')} |\n`);
+			md.appendMarkdown(`|${headers.map(() => '-------').join('|')}|\n`);
+		}
 
 		for (const prop of sortedProps) {
 			const badges: string[] = [];
 			if (prop.required) badges.push('⚠️ Required');
 			if (prop.bindable) badges.push('🔗 Bindable');
 
-			const name = `\`${prop.name}\``;
-			const type = `\`${prop.type}\``;
-			const defaultVal = prop.defaultValue ? `\`${prop.defaultValue}\`` : '—';
-			const notes = [...badges, prop.comment].filter(Boolean).join('<br>');
+			const cells: string[] = [`\`${prop.name}\``];
+			if (settings.showTypes) cells.push(`\`${prop.type}\``);
+			if (settings.showDefaults)
+				cells.push(prop.defaultValue ? `\`${prop.defaultValue}\`` : '—');
 
-			md.appendMarkdown(`| ${name} | ${type} | ${defaultVal} | ${notes} |\n`);
+			// Build notes column: badges + comment
+			if (settings.showComments) {
+				const notesParts: string[] = [...badges];
+				if (prop.comment) notesParts.push(prop.comment);
+				const notes = notesParts.join('<br>');
+				cells.push(notes || '—');
+			}
+
+			md.appendMarkdown(`| ${cells.join(' | ')} |\n`);
 		}
 
 		return md;
@@ -102,16 +134,18 @@ export class TooltipFormatter {
 	 * @param props The list of PropInfo objects
 	 * @param inherits Optional list of inherited types/interfaces
 	 * @param order The sorting preference
+	 * @param settings Visibility settings for tooltip formatting
 	 */
-	public static displayPropsAsTypescript(
+	private static displayPropsAsTypescript(
 		props: PropInfo[],
-		inherits?: string[],
-		order: TooltipOrder = 'required'
+		inherits: string[] | undefined,
+		order: TooltipOrder,
+		settings: FormatSettings
 	): vscode.MarkdownString {
 		const md = new vscode.MarkdownString();
 		md.isTrusted = true;
 
-		if (inherits && inherits.length > 0) {
+		if (settings.showInheritance && inherits && inherits.length > 0) {
 			const inheritsList = inherits.map((t) => `\`${t}\``).join(', ');
 			md.appendMarkdown(`**Extends:** ${inheritsList}\n\n`);
 		}
@@ -121,10 +155,19 @@ export class TooltipFormatter {
 
 		let details = '```typescript\n';
 		for (const prop of sortedProps) {
-			if (prop.comment) details += `/** ${prop.comment} */\n`;
-			details += `let ${prop.name}${prop.required ? '' : '?'}: ${prop.type}`;
-			if (prop.defaultValue) details += ` = ${prop.defaultValue}`;
-			details += ';\n';
+			if (settings.showComments && prop.comment) details += `/** ${prop.comment} */\n`;
+
+			details += `let ${prop.name}`;
+
+			// Show type with optional marker if enabled
+			if (settings.showTypes) details += `${prop.required ? '' : '?'}: ${prop.type}`;
+
+			// Add default value if enabled and present
+			if (settings.showDefaults && prop.defaultValue) details += ` = ${prop.defaultValue}`;
+
+			// When types are hidden, add '// required' comment if prop is required
+			details += !settings.showTypes && prop.required ? '; // required' : ';';
+			details += '\n';
 		}
 		details += '```\n';
 		md.appendMarkdown(details);
@@ -170,24 +213,37 @@ export class TooltipFormatter {
 	 * @param format The tooltip format setting
 	 * @param order The tooltip order setting
 	 * @param result The prop extraction result
+	 * @param settings Visibility settings for tooltip formatting
 	 * @returns A MarkdownString for the tooltip
 	 */
 	public static formatTooltip(
 		format: TooltipFormat,
 		order: TooltipOrder,
-		result: Required<PropExtractionResult>
+		result: Required<PropExtractionResult>,
+		settings: FormatSettings
 	): vscode.MarkdownString {
 		switch (format) {
 			case 'bullet-list':
-				return TooltipFormatter.displayPropsAsList(result.props, result.inherits, order);
+				return TooltipFormatter.displayPropsAsList(
+					result.props,
+					result.inherits,
+					order,
+					settings
+				);
 			case 'table':
-				return TooltipFormatter.displayPropsAsTable(result.props, result.inherits, order);
+				return TooltipFormatter.displayPropsAsTable(
+					result.props,
+					result.inherits,
+					order,
+					settings
+				);
 			case 'code-block':
 			default:
 				return TooltipFormatter.displayPropsAsTypescript(
 					result.props,
 					result.inherits,
-					order
+					order,
+					settings
 				);
 		}
 	}

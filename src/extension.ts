@@ -164,12 +164,19 @@ export function activate(context: vscode.ExtensionContext): void {
 						// Get settings for formatting
 						const format = Settings.getTooltipFormat();
 						const order = Settings.getTooltipOrder();
+						const formatSettings = {
+							showComments: Settings.getShowPropertyComments(),
+							showTypes: Settings.getShowPropertyTypes(),
+							showDefaults: Settings.getShowDefaultValues(),
+							showInheritance: Settings.getShowTypeInheritance()
+						};
 
 						// Select formatter based on setting
 						const md: vscode.MarkdownString = TooltipFormatter.formatTooltip(
 							format,
 							order,
-							result as Required<PropExtractionResult>
+							result as Required<PropExtractionResult>,
+							formatSettings
 						);
 						return new vscode.Hover(md);
 					}

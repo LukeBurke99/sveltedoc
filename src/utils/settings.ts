@@ -131,4 +131,36 @@ export class Settings {
 		// Return default if no valid names
 		return validated.length > 0 ? validated : ['index', 'main'];
 	}
+
+	/**
+	 * Get whether to show JSDoc comments for component properties in the tooltip.
+	 */
+	public static getShowPropertyComments(): boolean {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		return config.get<boolean>('showPropertyComments', true);
+	}
+
+	/**
+	 * Get whether to show type information for component properties in the tooltip.
+	 */
+	public static getShowPropertyTypes(): boolean {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		return config.get<boolean>('showPropertyTypes', true);
+	}
+
+	/**
+	 * Get whether to show default values for component properties in the tooltip.
+	 */
+	public static getShowDefaultValues(): boolean {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		return config.get<boolean>('showDefaultValues', true);
+	}
+
+	/**
+	 * Get whether to show type inheritance (the 'Extends' line) in the tooltip.
+	 */
+	public static getShowTypeInheritance(): boolean {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		return config.get<boolean>('showTypeInheritance', true);
+	}
 }

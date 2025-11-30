@@ -14,6 +14,18 @@
 			"problemMatcher": "$tsc"
 		},
 		{
+			"label": "pnpm: build",
+			"type": "shell",
+			"command": "pnpm",
+			"args": ["run", "build"],
+			"group": "build",
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "silent"
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "pnpm: watch",
 			"type": "shell",
 			"command": "pnpm",

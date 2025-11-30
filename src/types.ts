@@ -99,6 +99,16 @@ export type TooltipOrder = 'normal' | 'alphabetical' | 'required' | 'type';
 export type TooltipFormat = 'bullet-list' | 'table' | 'code-block';
 
 /**
+ * Tooltip visibility settings for controlling which components are displayed.
+ */
+export type FormatSettings = {
+	showComments: boolean;
+	showTypes: boolean;
+	showDefaults: boolean;
+	showInheritance: boolean;
+};
+
+/**
  * Workspace package information from pnpm-workspace.yaml.
  * Represents a single package in the workspace with its metadata.
  */

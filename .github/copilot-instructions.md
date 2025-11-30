@@ -61,7 +61,7 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 - **Settings**: Centralized configuration with validation (src/utils/settings.ts)
     - All settings use localization (package.nls.json)
     - Normalization: normaliseComment, normaliseType, normaliseDefaultValue
-    - Tooltip: tooltipOrder, tooltipFormat
+    - Tooltip: tooltipOrder, tooltipFormat, showPropertyComments, showPropertyTypes, showDefaultValues, showTypeInheritance
     - Cache: cacheExpirationMinutes
 - Commands:
     - Clear Cache: clears all cached component prop data
@@ -189,14 +189,23 @@ tests/            - Unit tests (at project root)
 ## Tooltip Format (Current)
 
 ```markdown
-**Extends:** `ParentType<Generic>`
+**Extends:** `ParentType<Generic>` # Only if showTypeInheritance=true
 
-- ⚠️ 🔗 `propName`: **Type** = `default`
-    - _JSDoc comment_
+- ⚠️ 🔗 `propName`: **Type** = `default` # Components controlled by visibility settings
+    - _JSDoc comment_ # Only if showPropertyComments=true
 - `optionalProp`: **string**
 ```
 
+**Visibility Settings:**
+
+- `showPropertyComments` (default: true) - Show/hide JSDoc comments
+- `showPropertyTypes` (default: true) - Show/hide type information
+- `showDefaultValues` (default: true) - Show/hide default values
+- `showTypeInheritance` (default: true) - Show/hide "Extends" line
+
 **Sort order:** Required first, then optional (alphabetical within groups)
+
+**Special behavior:** In code-block format, when `showPropertyTypes=false` and prop is required, adds `// required` comment for clarity.
 
 ## Quick Reference
 

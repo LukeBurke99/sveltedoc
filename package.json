@@ -139,11 +139,35 @@
 					"description": "%settings.tooltipFormat.description%",
 					"order": 5
 				},
+				"sveltedoc.showPropertyComments": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.showPropertyComments.description%",
+					"order": 6
+				},
+				"sveltedoc.showPropertyTypes": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.showPropertyTypes.description%",
+					"order": 7
+				},
+				"sveltedoc.showDefaultValues": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.showDefaultValues.description%",
+					"order": 8
+				},
+				"sveltedoc.showTypeInheritance": {
+					"type": "boolean",
+					"default": true,
+					"description": "%settings.showTypeInheritance.description%",
+					"order": 9
+				},
 				"sveltedoc.detailedResolverLogging": {
 					"type": "boolean",
 					"default": true,
 					"description": "%settings.detailedResolverLogging.description%",
-					"order": 6
+					"order": 10
 				},
 				"sveltedoc.fallbackTypes": {
 					"type": "object",
@@ -152,7 +176,7 @@
 						"class": "string"
 					},
 					"description": "%settings.fallbackTypes.description%",
-					"order": 7
+					"order": 11
 				},
 				"sveltedoc.barrelFileMaxDepth": {
 					"type": "number",
@@ -160,7 +184,7 @@
 					"minimum": 0,
 					"maximum": 10,
 					"description": "%settings.barrelFileMaxDepth.description%",
-					"order": 8
+					"order": 12
 				},
 				"sveltedoc.barrelFileNames": {
 					"type": "array",
@@ -172,7 +196,7 @@
 						"main"
 					],
 					"description": "%settings.barrelFileNames.description%",
-					"order": 9
+					"order": 13
 				}
 			}
 		}

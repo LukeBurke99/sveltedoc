@@ -237,6 +237,14 @@ All settings are under the `sveltedoc` namespace:
 
 - **`tooltipFormat`** (string, default: `'code-block'`) — Tooltip format: `bullet-list`, `table`, or `code-block`.
 
+- **`showPropertyComments`** (boolean, default: `true`) — Show JSDoc comments for component properties in the tooltip.
+
+- **`showPropertyTypes`** (boolean, default: `true`) — Show type information for component properties in the tooltip. When disabled in code-block format, required props will show a `// required` comment.
+
+- **`showDefaultValues`** (boolean, default: `true`) — Show default values for component properties in the tooltip.
+
+- **`showTypeInheritance`** (boolean, default: `true`) — Show the "Extends" line when component props inherit from other types or interfaces.
+
 - **`detailedResolverLogging`** (boolean, default: `true`) — Enable detailed logging for import resolution debugging. Check Output panel (View → Output → SvelteDoc).
 
 - **`fallbackTypes`** (object, default: `{ "children": "Snippet", "class": "string" }`) — Map of property names to types used when a prop has an 'unknown' type. Useful for common props like 'children' or 'class' that are often destructured without type annotations.
