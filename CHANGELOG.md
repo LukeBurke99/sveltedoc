@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.3...v2.1.0) (2025-11-30)
+
+### ✨ Features
+
+* Add new barrel file setting to allow custom-named barrel files ([dd2b248](https://github.com/LukeBurke99/sveltedoc/commit/dd2b248b2d48a15a6509fb0ee26229744b875861))
+
 ## [2.0.3](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.2...v2.0.3) (2025-11-28)
 
 ### 🐛 Bug Fixes
