@@ -95,3 +95,33 @@ describe('PathResolver: Path Alias Resolution', () => {
 		assert.strictEqual(resolved1, resolved2);
 	});
 });
+
+describe('PathResolver: Path Alias Resolution When Extending Base tsconfig', () => {
+	let resolver: PathResolver;
+	let cache: PathResolverCache;
+	const fixturePath = path.join(__dirname, 'fixtures', 'path-alias-extending-project');
+	const appFile = path.join(fixturePath, 'src', 'App.svelte');
+
+	beforeEach(() => {
+		// Create cache and resolver with mock logger and logging disabled
+		cache = new PathResolverCache();
+		const mockLogger = new MockLogger() as any;
+		resolver = new PathResolver(cache, mockLogger, false);
+	});
+
+	it('1. Should resolve $lib alias to src/lib pulled from base config', () => {
+		const specifier = '$lib/components/Button.svelte';
+		const resolved = resolver.resolve(appFile, specifier);
+
+		const expectedPath = path.join(fixturePath, 'src', 'lib', 'components', 'Button.svelte');
+		// Normalize paths for comparison (handle forward slash vs backslash)
+		assert.strictEqual(path.normalize(resolved ?? ''), path.normalize(expectedPath));
+	});
+
+	it('2. Should NOT resolve @components alias when missing', () => {
+		const specifier = '@components/Card.svelte';
+		const resolved = resolver.resolve(appFile, specifier);
+
+		assert.ok(!resolved);
+	});
+});
