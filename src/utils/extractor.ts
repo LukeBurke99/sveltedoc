@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { parseAttributes } from '../parsers/scriptParser';
-import type { ScriptBlock } from '../types';
+import type { ImportInfo, ScriptBlock } from '../types';
 
 /**
  * Extract all <script> blocks from a .svelte file. Lightweight regex approach.
@@ -38,7 +38,7 @@ export function extractScriptBlocksFromText(text: string): ScriptBlock[] {
  * Collects all local import names and their specifiers from given script blocks.
  * Supports both default imports and named imports.
  * @param blocks Array of script blocks to scan for imports
- * @returns Map of local import names to their specifiers
+ * @returns Map of local import names to their import info (specifier and optional original name)
  * @example
  * // Default import: import Button from './Button.svelte'
  * // Named import: import { PageStore } from './store'
@@ -46,15 +46,15 @@ export function extractScriptBlocksFromText(text: string): ScriptBlock[] {
  */
 export function extractImportsFromScriptBlocks(
 	blocks: ReturnType<typeof extractScriptBlocksFromText>
-): Map<string, string> {
-	const map = new Map<string, string>();
+): Map<string, ImportInfo> {
+	const map = new Map<string, ImportInfo>();
 	for (const b of blocks) {
 		let m: RegExpExecArray | null;
 
 		// Match default-only imports: import Name from 'spec'
 		// Uses negative lookahead to exclude mixed imports (those with comma)
 		const defaultRe = /import\s+([A-Za-z_][A-Za-z0-9_]*)(?!\s*,)\s+from\s+['"]([^'"]+)['"];?/g;
-		while ((m = defaultRe.exec(b.content))) map.set(m[1], m[2]);
+		while ((m = defaultRe.exec(b.content))) map.set(m[1], { specifier: m[2] });
 
 		// Match all imports with braces: { ... }
 		// Handles: import { named } from 'spec'
@@ -68,7 +68,7 @@ export function extractImportsFromScriptBlocks(
 			const spec = m[3];
 
 			// Add default import if present (mixed import case)
-			if (defaultName) map.set(defaultName, spec);
+			if (defaultName) map.set(defaultName, { specifier: spec });
 
 			// Parse and add named imports
 			const parts = namedPart.split(',');
@@ -76,15 +76,15 @@ export function extractImportsFromScriptBlocks(
 				const trimmed = part.trim();
 				if (!trimmed || trimmed.startsWith('type ')) continue;
 
-				// Handle 'Name as Alias' -> use Alias
+				// Handle 'Name as Alias' -> use Alias as key, but store original Name
 				const asMatch = /^([A-Za-z_][A-Za-z0-9_]*)\s+as\s+([A-Za-z_][A-Za-z0-9_]*)$/.exec(
 					trimmed
 				);
 				if (asMatch) {
-					map.set(asMatch[2], spec);
+					map.set(asMatch[2], { specifier: spec, originalName: asMatch[1] });
 				} else {
 					const nameMatch = /^([A-Za-z_][A-Za-z0-9_]*)$/.exec(trimmed);
-					if (nameMatch) map.set(nameMatch[1], spec);
+					if (nameMatch) map.set(nameMatch[1], { specifier: spec });
 				}
 			}
 		}

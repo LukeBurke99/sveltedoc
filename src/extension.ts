@@ -239,16 +239,21 @@ export function getPropsForHoveredComponent(
 	const docText = document.getText();
 	const pageBlocks = extractScriptBlocksFromText(docText);
 	const importMap = extractImportsFromScriptBlocks(pageBlocks);
-	const spec = importMap.get(tagName);
-	if (!spec)
+	const importInfo = importMap.get(tagName);
+	if (!importInfo)
 		return { success: false, failureReason: 'No import found for component', fromCache: false };
 
 	// 2) Resolve to absolute file path (with path alias and workspace package support)
-	const compPath = pathResolver?.resolve(document.fileName, spec, tagName);
+	// Use the original name for barrel file resolution if the import is aliased
+	const compPath = pathResolver?.resolve(
+		document.fileName,
+		importInfo.specifier,
+		importInfo.originalName ?? tagName
+	);
 	if (!compPath)
 		return {
 			success: false,
-			componentPath: spec,
+			componentPath: importInfo.specifier,
 			failureReason: 'Could not resolve import path',
 			fromCache: false
 		};

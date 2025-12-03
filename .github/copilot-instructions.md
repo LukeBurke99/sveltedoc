@@ -150,12 +150,12 @@ tests/            - Unit tests (at project root)
     - **extractor.ts**: Script block extraction and import parsing
         - extractScriptBlocksFromSvelte(filePath): Reads .svelte file and extracts <script> blocks
         - extractScriptBlocksFromText(text): Extracts <script> blocks from text (strips HTML comments)
-        - extractImportsFromScriptBlocks(blocks): Parses import statements (default, named, aliases)
+        - extractImportsFromScriptBlocks(blocks): Returns Map<string, ImportInfo> with specifier and optional originalName for aliased imports
     - **settings.ts**: Centralized configuration access with validation
     - **localization.ts**: i18n support
     - **propSorting.ts**: Prop sorting logic with type categorization
 - **types.ts**: All TypeScript types/interfaces (documented with purpose)
-    - Public types: `PropInfo`, `ScriptBlock`, `CacheEntry`, `PropExtractionResult`, `TooltipOrder`, `TooltipFormat`
+    - Public types: `PropInfo`, `ScriptBlock`, `ImportInfo`, `CacheEntry`, `PropExtractionResult`, `TooltipOrder`, `TooltipFormat`
     - Workspace types: `WorkspacePackage`, `WorkspaceCacheEntry`, `PackageResolutionCacheEntry`, `BarrelResolutionResult`
     - Internal types: `TypeEntry`, `TypeDefinition`, `TypeMap`, `ScannerContext`
 

@@ -21,6 +21,15 @@ export type ScriptBlock = {
 };
 
 /**
+ * Import information extracted from import statements.
+ * Stores the module specifier and optionally the original name if aliased.
+ */
+export type ImportInfo = {
+	specifier: string; // Module specifier (e.g., '@budget-suite/shared')
+	originalName?: string; // Original export name if aliased (e.g., 'Card' for 'Card as CoreCard')
+};
+
+/**
  * Internal cache entry for CacheService.
  * Stores extraction result with metadata for invalidation.
  */
