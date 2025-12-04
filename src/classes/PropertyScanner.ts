@@ -496,6 +496,9 @@ export class PropertyScanner extends BaseScanner {
 
 		let type = this.buffer.trim();
 
+		// Always dedent multi-line types to fix source indentation
+		type = this.dedentType(type);
+
 		if (this.shouldNormaliseType)
 			// Normalize whitespace: collapse multiple spaces/newlines to single space,
 			// then clean up spaces around brackets for readability
@@ -525,6 +528,42 @@ export class PropertyScanner extends BaseScanner {
 		// Clear for next property
 		this.resetProperty();
 		this.pendingJSDoc = undefined; // JSDoc only applies to one property
+	}
+
+	/**
+	 * Dedent a multi-line type string by removing common leading whitespace from all lines.
+	 * This fixes indentation issues when extracting types from source files.
+	 * @param type The type string to dedent
+	 * @returns The dedented type string
+	 */
+	private dedentType(type: string): string {
+		const lines = type.split('\n');
+
+		// Single line - no dedenting needed
+		if (lines.length === 1) return type;
+
+		// Find minimum indentation across non-empty lines (excluding first line)
+		const leadingWhitespaceRe = /^(\s*)/;
+		let minIndent = Infinity;
+		for (let i = 1; i < lines.length; i++) {
+			const line = lines[i];
+			if (line.trim().length === 0) continue; // Skip empty lines
+
+			const match = leadingWhitespaceRe.exec(line);
+			if (match) minIndent = Math.min(minIndent, match[1].length);
+		}
+
+		// If no indentation found, return as-is
+		if (minIndent === Infinity || minIndent === 0) return type;
+
+		// Remove the common indentation from all lines except the first
+		const dedentedLines = lines.map((line, index) => {
+			if (index === 0) return line; // First line has no leading indent to remove
+			if (line.trim().length === 0) return ''; // Preserve empty lines as empty
+			return line.slice(minIndent);
+		});
+
+		return dedentedLines.join('\n');
 	}
 
 	private resetProperty(): void {

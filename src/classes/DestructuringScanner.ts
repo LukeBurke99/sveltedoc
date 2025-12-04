@@ -185,7 +185,10 @@ export class DestructuringScanner extends BaseScanner {
 
 		let defaultValue = this.currentValue.trim() || undefined;
 
-		// Apply normalization if enabled
+		// Always dedent multi-line values to fix source indentation
+		if (defaultValue) defaultValue = this.dedentValue(defaultValue);
+
+		// Apply normalization if enabled (collapse all whitespace to single spaces)
 		if (defaultValue && this.shouldNormaliseDefaultValue)
 			defaultValue = defaultValue.replace(/\s+/g, ' ');
 
@@ -196,6 +199,42 @@ export class DestructuringScanner extends BaseScanner {
 
 		this.items.push(item);
 		this.resetItem();
+	}
+
+	/**
+	 * Dedent a multi-line string by removing common leading whitespace from all lines.
+	 * This fixes indentation issues when extracting values from source files.
+	 * @param value The string to dedent
+	 * @returns The dedented string
+	 */
+	private dedentValue(value: string): string {
+		const lines = value.split('\n');
+
+		// Single line - no dedenting needed
+		if (lines.length === 1) return value;
+
+		// Find minimum indentation across non-empty lines (excluding first line)
+		const leadingWhitespaceRe = /^(\s*)/;
+		let minIndent = Infinity;
+		for (let i = 1; i < lines.length; i++) {
+			const line = lines[i];
+			if (line.trim().length === 0) continue; // Skip empty lines
+
+			const match = leadingWhitespaceRe.exec(line);
+			if (match) minIndent = Math.min(minIndent, match[1].length);
+		}
+
+		// If no indentation found, return as-is
+		if (minIndent === Infinity || minIndent === 0) return value;
+
+		// Remove the common indentation from all lines except the first
+		const dedentedLines = lines.map((line, index) => {
+			if (index === 0) return line; // First line has no leading indent to remove
+			if (line.trim().length === 0) return ''; // Preserve empty lines as empty
+			return line.slice(minIndent);
+		});
+
+		return dedentedLines.join('\n');
 	}
 
 	/**
