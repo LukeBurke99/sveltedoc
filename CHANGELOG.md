@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.1.1...v2.2.0) (2025-12-04)
+
+### ✨ Features
+
+* Add new settings for customising the tooltip. ([ae19b74](https://github.com/LukeBurke99/sveltedoc/commit/ae19b740dd5340a9dfd5c37263170729b16e7dee))
+
+### 🐛 Bug Fixes
+
+* Fix components not being resolved when imported with an alias name (e.g. `import { Card as CardComponent }`). ([96920ff](https://github.com/LukeBurke99/sveltedoc/commit/96920ff18b5a5f9375880ba17fff9b65a918e3a3))
+* Fix types and default values not being normalised and removing multiple tabs ([307ca1a](https://github.com/LukeBurke99/sveltedoc/commit/307ca1a3271e56102e36364a75def3c2f3a46aa8))
+
 ## [2.1.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.1.0...v2.1.1) (2025-11-30)
 
 ### 🐛 Bug Fixes
