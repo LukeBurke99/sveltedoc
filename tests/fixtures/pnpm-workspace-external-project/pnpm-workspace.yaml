@@ -1,0 +1,4 @@
+packages:
+    - 'apps/*'
+    - 'packages/*'
+    - '../pnpm-workspace-glob-project/packages/shared'

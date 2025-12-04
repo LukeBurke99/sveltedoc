@@ -272,3 +272,168 @@ describe('PathResolver - Workspace GLOB Package Resolution', () => {
 		assert.ok(result2.includes('index.ts'), 'Should resolve to index.ts only');
 	});
 });
+
+describe('PathResolver - Workspace with External Package Resolution', () => {
+	let resolver: PathResolver;
+	let cache: PathResolverCache;
+	let fixtureRoot: string;
+	let myAppPage: string;
+	let workspaceYaml: string;
+
+	beforeEach(() => {
+		// Initialize services
+		cache = new PathResolverCache();
+		const mockLogger = new MockLogger() as any;
+		resolver = new PathResolver(cache, mockLogger, false); // Disable detailed logging for tests
+
+		// Set up fixture paths
+		fixtureRoot = path.join(__dirname, 'fixtures', 'pnpm-workspace-external-project');
+		myAppPage = path.join(fixtureRoot, 'apps', 'my-app', 'src', 'routes', '+page.svelte');
+		workspaceYaml = path.join(fixtureRoot, 'pnpm-workspace.yaml');
+	});
+
+	// ==================== Internal Package Tests (simple names) ====================
+
+	it('1. Should resolve internal package with simple name (luke-core-library)', () => {
+		const result = resolver.resolve(myAppPage, 'luke-core-library', 'InputField');
+
+		assert.ok(result, 'Should resolve simple-named workspace package');
+		assert.ok(result.endsWith('InputField.svelte'), 'Should resolve to InputField.svelte');
+	});
+
+	it('2. Should resolve AuthGuard component from simple-named package', () => {
+		const result = resolver.resolve(myAppPage, 'luke-core-library', 'AuthGuard');
+
+		assert.ok(result, 'Should resolve AuthGuard component');
+		assert.ok(result.endsWith('AuthGuard.svelte'), 'Should resolve to AuthGuard.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'AuthGuard.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('3. Should resolve from subpath export (luke-core-library/components)', () => {
+		const result = resolver.resolve(myAppPage, 'luke-core-library/components', 'InputField');
+
+		assert.ok(result, 'Should resolve from subpath export');
+		assert.ok(result.endsWith('InputField.svelte'), 'Should resolve to InputField.svelte');
+	});
+
+	it('4. Should cache simple-named package and reuse it', () => {
+		// First resolution
+		const result1 = resolver.resolve(myAppPage, 'luke-core-library', 'InputField');
+		assert.ok(result1, 'First resolution should succeed');
+
+		// Second resolution should use cache
+		const result2 = resolver.resolve(myAppPage, 'luke-core-library', 'AuthGuard');
+		assert.ok(result2, 'Second resolution should succeed');
+
+		// Both should be from same package
+		assert.ok(result1.includes('luke-core-library'), 'First should be from luke-core-library');
+		assert.ok(result2.includes('luke-core-library'), 'Second should be from luke-core-library');
+	});
+
+	// ==================== External Package Tests (../path reference) ====================
+
+	it('5. Should resolve external package referenced via relative path', () => {
+		const result = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+
+		assert.ok(result, 'Should resolve external workspace package');
+		assert.ok(result.endsWith('Button.svelte'), 'Should resolve to Button.svelte');
+	});
+
+	it('6. Should resolve external package to correct physical path', () => {
+		const result = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+
+		assert.ok(result, 'Should resolve external package');
+		// The resolved path should be in the external fixture (pnpm-workspace-glob-project)
+		assert.ok(
+			result.includes('pnpm-workspace-glob-project'),
+			'Should resolve to path in external project'
+		);
+		assert.ok(
+			result.includes(path.join('packages', 'shared')),
+			'Should be in external shared package'
+		);
+	});
+
+	it('7. Should resolve Card component from external package nested barrel', () => {
+		const result = resolver.resolve(myAppPage, '@budget-suite/shared/components/core', 'Card');
+
+		assert.ok(result, 'Should resolve Card from external package');
+		assert.ok(result.endsWith('Card.svelte'), 'Should resolve to Card.svelte');
+		assert.ok(result.includes('pnpm-workspace-glob-project'), 'Should be in external project');
+	});
+
+	it('8. Should handle both internal and external packages in same workspace', () => {
+		// Resolve internal package
+		const internalResult = resolver.resolve(myAppPage, 'luke-core-library', 'InputField');
+		assert.ok(internalResult, 'Should resolve internal package');
+		assert.ok(
+			internalResult.includes('pnpm-workspace-external-project'),
+			'Internal should be in current project'
+		);
+
+		// Resolve external package
+		const externalResult = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+		assert.ok(externalResult, 'Should resolve external package');
+		assert.ok(
+			externalResult.includes('pnpm-workspace-glob-project'),
+			'External should be in external project'
+		);
+	});
+
+	it('9. Should return undefined for non-existent package', () => {
+		const result = resolver.resolve(myAppPage, 'non-existent-package', 'Component');
+
+		assert.strictEqual(result, undefined, 'Should return undefined for non-existent package');
+	});
+
+	it('10. Should invalidate cache and still resolve external packages', () => {
+		// Initial resolution
+		const result1 = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+		assert.ok(result1, 'Initial resolution should succeed');
+
+		// Invalidate workspace cache
+		resolver.invalidateWorkspace(workspaceYaml);
+
+		// Resolution should still work after invalidation
+		const result2 = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+		assert.ok(result2, 'Resolution after invalidation should succeed');
+		assert.strictEqual(result1, result2, 'Should resolve to same path after re-parsing');
+	});
+
+	it('11. Should correctly normalize relative paths for external packages', () => {
+		const result = resolver.resolve(
+			myAppPage,
+			'@budget-suite/shared/components/button',
+			'Button'
+		);
+
+		assert.ok(result, 'Should resolve external package');
+		// Path should be normalized (no .. segments in final path)
+		assert.ok(!result.includes('..'), 'Resolved path should be normalized (no ..)');
+		// Should be an absolute path
+		assert.ok(path.isAbsolute(result), 'Should be an absolute path');
+	});
+});

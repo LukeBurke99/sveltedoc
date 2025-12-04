@@ -1,0 +1,8 @@
+{
+	"name": "luke-core-library",
+	"version": "1.0.0",
+	"exports": {
+		".": "./src/index.ts",
+		"./components": "./src/components/index.ts"
+	}
+}
