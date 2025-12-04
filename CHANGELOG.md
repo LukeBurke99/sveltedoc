@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.1.0...v2.1.1) (2025-11-30)
+
+### 🐛 Bug Fixes
+
+* Clean up loose files and decrease extension size. ([6b93f87](https://github.com/LukeBurke99/sveltedoc/commit/6b93f87a65d25599f9bbc78d40d7c361ad09925d))
+
 ## [2.1.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.0.3...v2.1.0) (2025-11-30)
 
 ### ✨ Features
