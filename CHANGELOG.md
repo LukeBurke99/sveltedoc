@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.0...v2.4.1) (2025-12-06)
+
+### 🐛 Bug Fixes
+
+* Fix bindable properties not being displayed in the `code-block` format. ([6e74989](https://github.com/LukeBurke99/sveltedoc/commit/6e74989dc6b7026abd4ff60e91592d347f1c1c40))
+
 ## [2.4.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.3.0...v2.4.0) (2025-12-06)
 
 ### ✨ Features
