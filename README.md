@@ -47,7 +47,7 @@ No need to jump between files or generate documentation blocks — SvelteDoc bri
 		/** Visual style variant */
 		variant?: 'primary' | 'secondary';
 
-		/** Click handler */
+		/** Click handler (method shorthand also supported: onClick(e: MouseEvent): void) */
 		onClick?: (event: MouseEvent) => void;
 	}
 

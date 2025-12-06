@@ -49,6 +49,13 @@ export class PropertyScanner extends BaseScanner {
 	private currentName: string = '';
 	private currentOptional: boolean = false;
 
+	// Method signature tracking (for shorthand method syntax like `select(item: Item): void`)
+	private isMethodSignature: boolean = false;
+	private methodGenericParams: string = ''; // Generic params like <T> or <T, U>
+	private methodParams: string = ''; // Method parameters
+	private methodParenDepth: number = 0; // Track nested parens in method params
+	private methodAngleDepth: number = 0; // Track nested angle brackets in generics
+
 	// Results
 	private properties: Map<string, TypeEntry> = new Map<string, TypeEntry>();
 	private pendingJSDoc: string | undefined;
@@ -150,6 +157,9 @@ export class PropertyScanner extends BaseScanner {
 				break;
 			case ScannerContext.PROPERTY_TYPE:
 				this.handlePropertyType(ch, next);
+				break;
+			case ScannerContext.METHOD_SIGNATURE:
+				this.handleMethodSignature(ch);
 				break;
 		}
 
@@ -257,7 +267,13 @@ export class PropertyScanner extends BaseScanner {
 
 	/**
 	 * PROPERTY_NAME context: Reading a property identifier.
-	 * Continues until we hit ?, :, or whitespace followed by :.
+	 * Continues until we hit ?, :, (, <, or whitespace followed by :.
+	 * Handles:
+	 *   - Regular properties: name: type
+	 *   - Optional properties: name?: type
+	 *   - Method shorthand: name(params): returnType
+	 *   - Optional method: name?(params): returnType
+	 *   - Generic method: name<T>(params): returnType
 	 */
 	private handlePropertyName(ch: string, next: string): void {
 		// Valid identifier characters
@@ -266,12 +282,64 @@ export class PropertyScanner extends BaseScanner {
 			return;
 		}
 
-		// Check for optional marker (?: syntax)
-		if (ch === '?' && next === ':') {
+		// Check for optional marker (?: syntax for properties, ?( or ?< for optional methods)
+		if (ch === '?') {
 			this.currentName = this.buffer.trim();
 			this.currentOptional = true;
 			this.buffer = '';
-			this.context = ScannerContext.AFTER_QUESTION;
+
+			// Optional method with generics: method?<T>(...)
+			if (next === '<') {
+				this.isMethodSignature = true;
+				this.methodAngleDepth = 0;
+				this.methodGenericParams = '';
+				this.context = ScannerContext.METHOD_SIGNATURE;
+				return;
+			}
+
+			// Optional method: method?(...)
+			if (next === '(') {
+				this.isMethodSignature = true;
+				this.methodParenDepth = 0;
+				this.methodParams = '';
+				this.context = ScannerContext.METHOD_SIGNATURE;
+				return;
+			}
+
+			// Regular optional property: name?:
+			if (next === ':') {
+				this.context = ScannerContext.AFTER_QUESTION;
+				return;
+			}
+
+			// Invalid - reset
+			this.resetProperty();
+			this.context = ScannerContext.NONE;
+			return;
+		}
+
+		// Check for generic method: name<T>(...)
+		if (ch === '<') {
+			this.currentName = this.buffer.trim();
+			this.currentOptional = false;
+			this.buffer = '';
+			this.isMethodSignature = true;
+			this.methodAngleDepth = 1; // We're entering the first <
+			this.methodGenericParams = '<';
+			this.context = ScannerContext.METHOD_SIGNATURE;
+			return;
+		}
+
+		// Check for method shorthand: name(...)
+		if (ch === '(') {
+			this.currentName = this.buffer.trim();
+			this.currentOptional = false;
+			this.buffer = '';
+			this.isMethodSignature = true;
+			this.methodParenDepth = 1; // We're entering the first (
+			this.methodParams = '(';
+			this.methodGenericParams = '';
+			this.context = ScannerContext.METHOD_SIGNATURE;
 			return;
 		}
 
@@ -321,6 +389,101 @@ export class PropertyScanner extends BaseScanner {
 
 		// Don't advance - let handlePropertyType process this character
 		this.pos--;
+	}
+
+	/**
+	 * METHOD_SIGNATURE context: Reading method shorthand syntax.
+	 *
+	 * Handles patterns like:
+	 *   - select(item: Item): void
+	 *   - select?(item: Item): void
+	 *   - select<T>(item: T): T
+	 *   - select<T, U>(item: T, other: U): void
+	 *
+	 * The flow is:
+	 *   1. If we have generic params to read (<...>), read them first
+	 *   2. Then read method params (...)
+	 *   3. Then expect : and read return type
+	 *   4. Finalize as arrow function: <T>(params) => returnType
+	 */
+	private handleMethodSignature(ch: string): void {
+		// Phase 1: Reading generic parameters (if any)
+		// Only process generics if we haven't started reading params yet (methodParams is empty)
+		// AND we're either already inside generics (methodAngleDepth > 0) or seeing a fresh <
+		if (this.methodParams === '' && (this.methodAngleDepth > 0 || ch === '<')) {
+			if (ch === '<') {
+				this.methodAngleDepth++;
+				this.methodGenericParams += ch;
+				return;
+			}
+			if (ch === '>') {
+				this.methodAngleDepth--;
+				this.methodGenericParams += ch;
+
+				// Done reading generics, check for ( to start params
+				if (this.methodAngleDepth === 0) {
+					// Next should be ( for method params
+					// Will be handled in next iteration
+				}
+				return;
+			}
+			// Accumulate generic content
+			this.methodGenericParams += ch;
+			return;
+		}
+
+		// Phase 2: Reading method parameters
+		if (this.methodParenDepth > 0 || ch === '(') {
+			if (ch === '(') {
+				this.methodParenDepth++;
+				this.methodParams += ch;
+				return;
+			}
+			if (ch === ')') {
+				this.methodParenDepth--;
+				this.methodParams += ch;
+
+				// Done reading params, expect : next
+				if (this.methodParenDepth === 0) {
+					// Transition to reading return type
+					// Will look for : in next characters
+				}
+				return;
+			}
+			// Handle nested angle brackets in params (for types like Array<T>)
+			// Note: We use a separate counter here to track nesting within params
+			if (ch === '<') {
+				this.methodAngleDepth++;
+				this.methodParams += ch;
+				return;
+			}
+			if (ch === '>') {
+				if (this.methodAngleDepth > 0) this.methodAngleDepth--;
+				this.methodParams += ch;
+				return;
+			}
+			// Accumulate param content
+			this.methodParams += ch;
+			return;
+		}
+
+		// Phase 3: After params, looking for : to start return type
+		if (this.methodParams !== '' && this.methodParenDepth === 0) {
+			// Skip whitespace
+			if (/\s/.test(ch)) return;
+
+			// Expect colon to introduce return type
+			if (ch === ':') {
+				this.context = ScannerContext.PROPERTY_TYPE;
+				this.depth = 0;
+				this.buffer = '';
+				return;
+			}
+
+			// Invalid - abort
+			this.resetProperty();
+			this.context = ScannerContext.NONE;
+		}
 	}
 
 	/**
@@ -490,11 +653,23 @@ export class PropertyScanner extends BaseScanner {
 	/**
 	 * Finalize the current property and add it to results.
 	 * Normalizes whitespace in the type string for readability if shouldNormaliseType is true.
+	 * For method signatures, constructs arrow function type: <T>(params) => returnType
 	 */
 	private finalizeProperty(): void {
 		if (!this.currentName) return;
 
 		let type = this.buffer.trim();
+
+		// For method signatures, construct arrow function type
+		if (this.isMethodSignature) {
+			// Combine: generics + params + " => " + return type
+			// Example: select<T>(item: T): T becomes <T>(item: T) => T
+			const genericPart = this.methodGenericParams.trim();
+			const paramsPart = this.methodParams.trim();
+			const returnType = type;
+
+			type = `${genericPart}${paramsPart} => ${returnType}`;
+		}
 
 		// Always dedent multi-line types to fix source indentation
 		type = this.dedentType(type);
@@ -570,6 +745,12 @@ export class PropertyScanner extends BaseScanner {
 		this.currentName = '';
 		this.currentOptional = false;
 		this.buffer = '';
+		// Reset method signature tracking
+		this.isMethodSignature = false;
+		this.methodGenericParams = '';
+		this.methodParams = '';
+		this.methodParenDepth = 0;
+		this.methodAngleDepth = 0;
 	}
 
 	/**

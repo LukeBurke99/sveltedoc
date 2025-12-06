@@ -1478,3 +1478,382 @@ describe('Prop Parser (Extracting the correct Types/Interfaces)', () => {
 		assert.strictEqual(classProp.type, 'number');
 	});
 });
+
+/**
+ * Tests for method shorthand syntax in types/interfaces.
+ * Method shorthand like `select(item: Item): void` should be converted to arrow function syntax.
+ */
+describe('Prop Parser (Method Shorthand Syntax)', () => {
+	it('1. Simple method shorthand (no parameters)', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { onClick(): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { onClick }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'onClick');
+		assert.strictEqual(result.props[0].type, '() => void');
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('2. Method shorthand with single parameter', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { select(item: Item): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { select }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'select');
+		assert.strictEqual(result.props[0].type, '(item: Item) => void');
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('3. Method shorthand with multiple parameters', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content:
+					'interface Props { update(id: string, value: number, force: boolean): boolean; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { update }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'update');
+		assert.strictEqual(
+			result.props[0].type,
+			'(id: string, value: number, force: boolean) => boolean'
+		);
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('4. Optional method shorthand', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { onClick?(): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { onClick }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'onClick');
+		assert.strictEqual(result.props[0].type, '() => void');
+		assert.strictEqual(result.props[0].required, false);
+	});
+
+	it('5. Optional method shorthand with parameters', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { onSelect?(item: Item, index: number): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { onSelect }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'onSelect');
+		assert.strictEqual(result.props[0].type, '(item: Item, index: number) => void');
+		assert.strictEqual(result.props[0].required, false);
+	});
+
+	it('6. Generic method shorthand', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { transform<T>(value: T): T; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { transform }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'transform');
+		assert.strictEqual(result.props[0].type, '<T>(value: T) => T');
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('7. Generic method with multiple type parameters', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { map<T, U>(value: T, mapper: (v: T) => U): U; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { map }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'map');
+		assert.strictEqual(result.props[0].type, '<T, U>(value: T, mapper: (v: T) => U) => U');
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('8. Optional generic method', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { convert?<T>(input: string): T; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { convert }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'convert');
+		assert.strictEqual(result.props[0].type, '<T>(input: string) => T');
+		assert.strictEqual(result.props[0].required, false);
+	});
+
+	it('9. Mixed properties and method shorthands', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: `interface Props {
+					items: Item[];
+					select(item: Item): void;
+					label: string;
+					onClick?: () => void;
+					update?<T>(value: T): T;
+				}`,
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[
+				blocks[0],
+				{
+					content: 'const { items, select, label, onClick, update }: Props = $props();',
+					attributes: {}
+				}
+			],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 5);
+
+		// Regular array property
+		const itemsProp = result.props.find((p) => p.name === 'items');
+		assert.ok(itemsProp);
+		assert.strictEqual(itemsProp.type, 'Item[]');
+		assert.strictEqual(itemsProp.required, true);
+
+		// Method shorthand
+		const selectProp = result.props.find((p) => p.name === 'select');
+		assert.ok(selectProp);
+		assert.strictEqual(selectProp.type, '(item: Item) => void');
+		assert.strictEqual(selectProp.required, true);
+
+		// Regular string property
+		const labelProp = result.props.find((p) => p.name === 'label');
+		assert.ok(labelProp);
+		assert.strictEqual(labelProp.type, 'string');
+		assert.strictEqual(labelProp.required, true);
+
+		// Arrow function property (already supported)
+		const onClickProp = result.props.find((p) => p.name === 'onClick');
+		assert.ok(onClickProp);
+		assert.strictEqual(onClickProp.type, '() => void');
+		assert.strictEqual(onClickProp.required, false);
+
+		// Optional generic method
+		const updateProp = result.props.find((p) => p.name === 'update');
+		assert.ok(updateProp);
+		assert.strictEqual(updateProp.type, '<T>(value: T) => T');
+		assert.strictEqual(updateProp.required, false);
+	});
+
+	it('10. Method with complex parameter types', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content:
+					'interface Props { handle(event: MouseEvent | KeyboardEvent, options: { preventDefault?: boolean }): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { handle }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'handle');
+		assert.strictEqual(
+			result.props[0].type,
+			'(event: MouseEvent | KeyboardEvent, options: { preventDefault?: boolean }) => void'
+		);
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('11. Method with array and generic parameter types', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content:
+					'interface Props { process(items: Array<Item>, callback: (item: Item) => void): Promise<void>; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { process }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'process');
+		assert.strictEqual(
+			result.props[0].type,
+			'(items: Array<Item>, callback: (item: Item) => void) => Promise<void>'
+		);
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('12. Method shorthand with JSDoc comment', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: `interface Props {
+					/** Handles selection of an item */
+					select(item: Item): void;
+				}`,
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { select }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'select');
+		assert.strictEqual(result.props[0].type, '(item: Item) => void');
+		assert.strictEqual(result.props[0].comment, 'Handles selection of an item');
+	});
+
+	it('13. Type alias with method shorthand (also works)', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'type Props = { select(item: Item): void; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { select }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'select');
+		assert.strictEqual(result.props[0].type, '(item: Item) => void');
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('14. Generic method with constrained type parameter', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content:
+					'interface Props { filter<T extends Item>(predicate: (item: T) => boolean): T[]; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { filter }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'filter');
+		assert.strictEqual(
+			result.props[0].type,
+			'<T extends Item>(predicate: (item: T) => boolean) => T[]'
+		);
+		assert.strictEqual(result.props[0].required, true);
+	});
+
+	it('15. Method with optional parameter', () => {
+		const blocks: ScriptBlock[] = [
+			{
+				content: 'interface Props { load(id: string, force?: boolean): Promise<Data>; }',
+				attributes: {}
+			}
+		];
+
+		const result = parsePropsFromScriptBlocks(
+			[blocks[0], { content: 'const { load }: Props = $props();', attributes: {} }],
+			TEST_NORMALISE_COMMENT,
+			TEST_NORMALISE_TYPE,
+			TEST_NORMALISE_DEFAULT_VALUE
+		);
+
+		assert.strictEqual(result.props.length, 1);
+		assert.strictEqual(result.props[0].name, 'load');
+		assert.strictEqual(result.props[0].type, '(id: string, force?: boolean) => Promise<Data>');
+		assert.strictEqual(result.props[0].required, true);
+	});
+});

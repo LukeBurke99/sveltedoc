@@ -85,7 +85,8 @@ export enum ScannerContext {
 	PROPERTY_NAME, // Reading property name
 	AFTER_QUESTION, // Read ? after property name
 	AFTER_COLON, // Read : after property name
-	PROPERTY_TYPE // Reading property type
+	PROPERTY_TYPE, // Reading property type
+	METHOD_SIGNATURE // Reading method shorthand: name(params): returnType
 }
 
 export type PropExtractionResult = {
