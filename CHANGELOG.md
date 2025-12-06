@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.3.0...v2.4.0) (2025-12-06)
+
+### ✨ Features
+
+* Add new parser method to parse method functions from properties (rather than only arrow functions). ([b26faab](https://github.com/LukeBurke99/sveltedoc/commit/b26faab078ebb4bd6b0d01d64e8e63a7a9e85d88))
+
 ## [2.3.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.2.0...v2.3.0) (2025-12-06)
 
 ### ✨ Features
