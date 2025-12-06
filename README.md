@@ -2,6 +2,8 @@
 
 > **Intelligent hover tooltips for your Svelte 5 components** — See component props, types, and JSDoc comments without leaving your workflow.
 
+![Example video](https://github.com/LukeBurke99/sveltedoc/blob/master/images/SvelteDoc-Example.gif?raw=true)
+
 ## What it does
 
 Hover over any Svelte component tag to instantly see:
