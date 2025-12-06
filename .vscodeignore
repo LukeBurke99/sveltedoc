@@ -41,3 +41,7 @@ PHASE2.md
 TASKS.md
 Tasks4Luke.md
 Version*.md
+Final Steps.md
+
+# ignore large assets
+images/SvelteDoc-Example.gif

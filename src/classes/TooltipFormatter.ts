@@ -163,7 +163,8 @@ export class TooltipFormatter {
 			if (settings.showTypes) details += `${prop.required ? '' : '?'}: ${prop.type}`;
 
 			// Add default value if enabled and present
-			if (settings.showDefaults && prop.defaultValue) details += ` = ${prop.defaultValue}`;
+			if (settings.showDefaults && prop.defaultValue)
+				details += TooltipFormatter.showBindable(prop.defaultValue, prop.bindable);
 
 			// When types are hidden, add '// required' comment if prop is required
 			details += !settings.showTypes && prop.required ? '; // required' : ';';
@@ -173,6 +174,14 @@ export class TooltipFormatter {
 		md.appendMarkdown(details);
 
 		return md;
+	}
+
+	private static showBindable(defaultValue: string, bindable: boolean): string {
+		let str = ' = ';
+		if (bindable) str += '$bindable(';
+		str += defaultValue;
+		if (bindable) str += ')';
+		return str;
 	}
 
 	//#endregion

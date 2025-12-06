@@ -6,9 +6,7 @@ This document provides a detailed analysis of all remaining tasks in `TASKS.md`,
 
 ## Table of Contents
 
-1. [Marketplace Demo GIF](#1-marketplace-demo-gif)
 2. [Debounce Rapid Hover Events](#2-debounce-rapid-hover-events)
-3. [Jump-to-Definition from Hover](#3-jump-to-definition-from-hover)
 4. [Phase 2: npm/yarn Workspaces + node_modules](#4-phase-2-npmyarn-workspaces--node_modules)
 5. [Integration Test: Hover Provider](#5-integration-test-hover-provider)
 6. [Settings Ordering Test](#6-settings-ordering-test)
@@ -16,35 +14,6 @@ This document provides a detailed analysis of all remaining tasks in `TASKS.md`,
 
 ---
 
-
-
-## 1. Marketplace Demo GIF
-
-### Task Description
-> Marketplace demo GIF of hover tooltip
-
-### Has It Been Implemented? ❌ **NO**
-
-### What Already Exists
-- Static screenshot: `images/documentation.png`
-- No animated content demonstrating the hover experience
-
-### What Would Need to Change
-1. Record a screen capture showing:
-   - Hovering over a component tag
-   - Tooltip appearing with props
-   - Different tooltip formats (bullet-list, table, code-block)
-   - Hover-within-tag feature
-2. Convert to GIF (optimized for marketplace)
-3. Add to README and update marketplace listing
-
-### Is It Worth It?
-**🔴 HIGH PRIORITY** - Animated GIFs significantly increase extension downloads on the VS Code marketplace. This is a low-effort, high-impact task that doesn't require code changes.
-
-**Estimated Effort:** 30 minutes
-**Impact:** High (marketing/discoverability)
-
----
 
 ## 2. Debounce Rapid Hover Events
 
@@ -273,34 +242,6 @@ The caching approach is **better** than debouncing because:
 **Total overhead for cache hit: ~3-5ms** - Fast enough that debouncing isn't needed.
 
 **Recommendation:** Remove from TASKS.md or mark as "Won't Do - Caching Sufficient"
-
----
-
-## 3. Jump-to-Definition from Hover
-
-### Task Description
-> Jump-to-definition from hover for a prop definition (or the extends section)
-
-### Has It Been Implemented? ❌ **NO**
-
-### What Already Exists
-- Hover shows component path (clickable in some cases)
-- No prop-level navigation
-
-### What Would Need to Change
-1. Track source locations during prop parsing (line numbers)
-2. Create `vscode.Uri` links in tooltip markdown
-3. Use `command:` URIs to trigger `vscode.window.showTextDocument`
-4. Example: `[propName](command:vscode.open?${encodeURIComponent(args)})`
-
-### Is It Worth It?
-**🟡 MEDIUM PRIORITY**
-
-- Popular feature in language servers
-- Would require significant changes to prop parsing to track locations
-- High value for developer productivity
-
-**Recommendation:** Consider for future major version
 
 ---
 
