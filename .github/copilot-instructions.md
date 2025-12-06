@@ -53,7 +53,7 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
     - Upward search for pnpm-workspace.yaml to detect workspace root
     - Lazy loading: workspace packages parsed on first use, cached with mtime validation
     - Conditional exports support: priority order "svelte" → "default" → first available
-    - Barrel file resolution up to 2 levels deep with timing measurements
+    - Barrel file resolution up to configurable depth (default 3 levels) with timing measurements
     - Export patterns: `export { default as X }`, `export { X }`, `export * from`
     - Two-level caching: workspace package map + individual package resolutions
     - File watcher for pnpm-workspace.yaml with automatic cache invalidation
@@ -62,11 +62,12 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
     - All settings use localization (package.nls.json)
     - Normalization: normaliseComment, normaliseType, normaliseDefaultValue
     - Tooltip: tooltipOrder, tooltipFormat, showPropertyComments, showPropertyTypes, showDefaultValues, showTypeInheritance
+    - Hover behavior: hoverWithinTag (show props when hovering anywhere in tag), hoverWithinTagMaxLines
     - Cache: cacheExpirationMinutes
 - Commands:
     - Clear Cache: clears all cached component prop data
     - Show Output: focuses the OUTPUT channel for diagnostics
-- Unit tests (in tests/) for prop parser (propParser.properties.test.ts and propParser.defaults.test.ts) and script extraction (extractor.scripts.test.ts and extractor.imports.test.ts)
+- Unit tests (in tests/) for prop parser (propParser.properties.test.ts and propParser.defaults.test.ts), script extraction (extractor.scripts.test.ts and extractor.imports.test.ts), tag parser (tagParser.test.ts with 28 tests covering both hover modes), and path resolver (pathResolver.alias.test.ts, pathResolver.workspace.test.ts)
 
 **❌ Not Yet Implemented:**
 
@@ -83,7 +84,7 @@ src/              - Source code
   utils/          - Utilities (pathResolver, settings, extractor, etc.)
   interfaces/     - VSCode interface stubs
 tests/            - Unit tests (at project root)
-  fixtures/       - Test fixtures (path-alias-project, pnpm-workspace-project)
+  fixtures/       - Test fixtures (path-alias-project, pnpm-workspace-project, pnpm-workspace-external-project)
 ```
 
 ## Key Architecture
@@ -131,7 +132,13 @@ tests/            - Unit tests (at project root)
     - **scriptParser.ts**: Script tag attribute parsing
         - parseAttributes(): Converts raw attribute string to key-value map
     - **tagParser.ts**: Tag name detection for hover provider
-        - getTagNameAtPosition(): Detects capitalized component tags at cursor position
+        - TagDetectionOptions type: { hoverWithinTag: boolean; maxLines: number }
+        - getTagNameAtPosition(): Main entry, tries direct detection then backwards scan
+        - getTagNameDirectly(): Original behavior - cursor must be on tag name
+        - findTagFromWithinBrackets(): Backwards scanning with bracket/string depth tracking
+        - determineInitialState(): Forward scan from line start to establish initial state
+        - isBeforeClosingBracket(): Forward verification cursor is before closing >
+        - Handles nested brackets, string literals, multi-line tags up to maxLines
 - **utils/**: Utility functions and services
     - **pathResolver.ts**: Unified path resolution using get-tsconfig and yaml
         - resolve(fromFile, specifier, componentName?): Main entry point with optional component name for barrels
@@ -247,7 +254,7 @@ tests/            - Unit tests (at project root)
     - Workspace detection: Upward search for pnpm-workspace.yaml (cached per directory tree)
     - Package parsing: Reads yaml config and each package's package.json (lazy loaded)
     - Exports resolution: Simple strings and conditional exports with priority (svelte→default→first)
-    - Barrel resolution: Follows re-exports up to 2 levels with timing tracking
+    - Barrel resolution: Follows re-exports up to configurable depth (default 3) with timing tracking
     - Export patterns: `export { default as X } from`, `export { X } from`, `export * from`
     - Cache integration: Two-level caching with mtime validation and automatic invalidation
 

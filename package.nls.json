@@ -41,6 +41,8 @@
 	"settings.fallbackTypes.description": "Map of property names to types used when a prop has an 'unknown' type. Useful for common props like 'children' or 'class' that are often destructured without type annotations.",
 	"settings.barrelFileMaxDepth.description": "Maximum depth for resolving barrel files (index re-exports) in workspace packages. ⚠️ Warning: Higher values may slow down component resolution.",
 	"settings.barrelFileNames.description": "List of file names (without extension) to treat as barrel files when resolving workspace packages. Use '*' to check any .ts/.js file for re-exports. ⚠️ Warning: Using '*' may impact performance.",
+	"settings.hoverWithinTag.description": "Show component properties when hovering anywhere within opening tag brackets, not just on the tag name.",
+	"settings.hoverWithinTagMaxLines.description": "Maximum lines to search backwards when detecting component tags for hover-within-tag feature. Lower values improve performance but may miss very long multi-line component tags.",
 
 	"resolver.log.attemptingResolve": "🔍 Attempting to resolve '{0}' from {1}",
 	"resolver.log.relativePathDetected": "  ├─ Detected relative path, using standard resolution",

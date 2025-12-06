@@ -253,6 +253,10 @@ All settings are under the `sveltedoc` namespace:
 
 - **`barrelFileNames`** (array, default: `["index", "main"]`) — List of file names (without extension) to recognize as barrel files. Files matching these names will be checked for re-export patterns when resolving workspace package imports. Use `["*"]` to check any `.ts`/`.js` file for re-exports. ⚠️ Warning: Using wildcard `*` may impact performance on large projects.
 
+- **`hoverWithinTag`** (boolean, default: `true`) — Show component properties when hovering anywhere within opening tag brackets, not just on the tag name. This allows you to see props while hovering over attributes or values.
+
+- **`hoverWithinTagMaxLines`** (number, default: `50`) — Maximum lines to search backwards when detecting component tags for the hover-within-tag feature. Range: 1-200. Lower values improve performance but may miss very long multi-line component tags.
+
 ---
 
 ## Commands

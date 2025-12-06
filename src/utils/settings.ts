@@ -163,4 +163,22 @@ export class Settings {
 		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
 		return config.get<boolean>('showTypeInheritance', true);
 	}
+
+	/**
+	 * Get whether to show component properties when hovering anywhere within opening tag brackets.
+	 */
+	public static getHoverWithinTag(): boolean {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		return config.get<boolean>('hoverWithinTag', true);
+	}
+
+	/**
+	 * Get maximum lines to search backwards when detecting component tags.
+	 * Enforces bounds: minimum 1, maximum 200.
+	 */
+	public static getHoverWithinTagMaxLines(): number {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		const value = config.get<number>('hoverWithinTagMaxLines', 50);
+		return Math.max(1, Math.min(200, value));
+	}
 }

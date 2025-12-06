@@ -1,6 +1,12 @@
 import * as assert from 'assert';
 import type { Position, TextDocument } from '../src/interfaces/vscode';
-import { getTagNameAtPosition } from '../src/parsers/tagParser';
+import { getTagNameAtPosition, TagDetectionOptions } from '../src/parsers/tagParser';
+
+/** Options with hoverWithinTag disabled (legacy behavior) */
+const DISABLED_OPTIONS: TagDetectionOptions = { hoverWithinTag: false, maxLines: 50 };
+
+/** Options with hoverWithinTag enabled */
+const ENABLED_OPTIONS: TagDetectionOptions = { hoverWithinTag: true, maxLines: 50 };
 
 /**
  * Create a minimal mock TextDocument for testing tag parsing
@@ -163,12 +169,12 @@ function createPosition(character: number, line: number = 0): Position {
 	return { character, line };
 }
 
-describe('Tag Parser: Get hovering tag name', () => {
+describe('Tag Parser: Get hovering tag name (hoverWithinTag: false)', () => {
 	it('1. Should return tag name when hovering over opening tag', () => {
 		const doc = createMockDocument('<Component prop="value">');
 		const position = createPosition(1); // Position on 'C' in Component
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, 'Component');
 	});
@@ -177,7 +183,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(1, 32); // Line 32: <FakeComponent value={42} />
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, 'FakeComponent');
 	});
@@ -186,7 +192,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(1, 33); // Line 33: <Complex description="Some desc" items={[]} />
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, 'Complex');
 	});
@@ -195,7 +201,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(1, 35); // Line 35: <Button
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, 'Button');
 	});
@@ -204,7 +210,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(1, 96); // Line 96: <FullScreenPopUp bind:open={menuOpen}>
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, 'FullScreenPopUp');
 	});
@@ -213,7 +219,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(5, 43); // Line 43: <div> (lowercase HTML element)
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, undefined);
 	});
@@ -222,7 +228,7 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(11, 2); // Line 2: import Button from...
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, undefined);
 	});
@@ -231,8 +237,216 @@ describe('Tag Parser: Get hovering tag name', () => {
 		const doc = createMockDocument();
 		const position = createPosition(14, 42); // Line 42: {#each Object.entries
 
-		const result = getTagNameAtPosition(doc, position);
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
 
 		assert.strictEqual(result, undefined);
+	});
+
+	it('9. Should return undefined when hovering over attribute (hoverWithinTag disabled)', () => {
+		const doc = createMockDocument('<Button color="red" />');
+		const position = createPosition(10); // Position on 'color' attribute
+
+		const result = getTagNameAtPosition(doc, position, DISABLED_OPTIONS);
+
+		assert.strictEqual(result, undefined);
+	});
+});
+
+describe('Tag Parser: Hover within tag (hoverWithinTag: true)', () => {
+	// ==================== Single-line component tests ====================
+
+	it('1. Should return Button when hovering over attribute name', () => {
+		const doc = createMockDocument('<Button color="red" />');
+		const position = createPosition(10); // Position on 'color'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('2. Should return Button when hovering over attribute value', () => {
+		const doc = createMockDocument('<Button color="red" />');
+		const position = createPosition(16); // Position on 'red'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('3. Should return Button when hovering on space before self-closing />', () => {
+		const doc = createMockDocument('<Button color="red" />');
+		const position = createPosition(20); // Position on space before />
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('4. Should return Component when hovering over expression in attribute', () => {
+		const doc = createMockDocument('<Component value={someVar} />');
+		const position = createPosition(18); // Position on 'someVar'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Component');
+	});
+
+	it('5. Should return Component when hovering over complex expression', () => {
+		const doc = createMockDocument('<Component onclick={() => console.log("clicked")} />');
+		const position = createPosition(25); // Position inside arrow function
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Component');
+	});
+
+	// ==================== Multi-line component tests ====================
+
+	it('6. Should return Button when hovering over attribute on second line', () => {
+		const doc = createMockDocument(`<Button
+    color="green"
+    icon={successIcon}
+/>`);
+		const position = createPosition(10, 1); // Line 1, position on 'color'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('7. Should return Button when hovering over attribute on third line', () => {
+		const doc = createMockDocument(`<Button
+    color="green"
+    icon={successIcon}
+/>`);
+		const position = createPosition(10, 2); // Line 2, position on 'icon'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('8. Should return Button when hovering inside complex multi-line onclick', () => {
+		const doc = createMockDocument(`<Button
+    color="green"
+    onclick={(e: Event) => {
+        console.log('Wow');
+        doSomething();
+    }}
+>`);
+		const position = createPosition(16, 3); // Line 3, inside console.log
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('9. Should return Button when hovering on closing brace of multi-line handler', () => {
+		const doc = createMockDocument(`<Button
+    onclick={() => {
+        console.log('test');
+    }}
+/>`);
+		const position = createPosition(5, 3); // Line 3, on the closing }}
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	// ==================== Negative tests ====================
+
+	it('10. Should return undefined when hovering outside component tag', () => {
+		const doc = createMockDocument('<Button /> <span>text</span>');
+		const position = createPosition(15); // Position on 'span'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, undefined);
+	});
+
+	it('11. Should return undefined when hovering in content between tags', () => {
+		const doc = createMockDocument('<Button>Hello World</Button>');
+		const position = createPosition(12); // Position on 'World'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, undefined);
+	});
+
+	it('12. Should return undefined for lowercase html elements', () => {
+		const doc = createMockDocument('<div class="test">');
+		const position = createPosition(8); // Position on 'class'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, undefined);
+	});
+
+	it('13. Should return Child (innermost) when hovering inside nested Child', () => {
+		const doc = createMockDocument('<Parent><Child prop="value" /></Parent>');
+		const position = createPosition(17); // Position on 'prop' inside Child
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Child');
+	});
+
+	it('14. Should return undefined after self-closing tag ends', () => {
+		const doc = createMockDocument('<Button /> some text');
+		const position = createPosition(14); // Position on 'some'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, undefined);
+	});
+
+	// ==================== Edge cases with strings containing special chars ====================
+
+	it('15. Should handle strings with > inside attribute value', () => {
+		const doc = createMockDocument('<Button label="Click > here" />');
+		const position = createPosition(20); // Position on 'here' after >
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('16. Should handle strings with < inside attribute value', () => {
+		const doc = createMockDocument('<Button label="a < b" />');
+		const position = createPosition(18); // Position on 'b' after <
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('17. Should handle template literals with expressions', () => {
+		const doc = createMockDocument('<Button label={`Value: ${count}`} />');
+		const position = createPosition(26); // Position inside template literal
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	// ==================== Direct tag name still works ====================
+
+	it('18. Should still return tag when hovering directly on tag name', () => {
+		const doc = createMockDocument('<Button color="red" />');
+		const position = createPosition(3); // Position on 'Button'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Button');
+	});
+
+	it('19. Should work with namespaced components like Foo.Bar', () => {
+		const doc = createMockDocument('<Foo.Bar prop="value" />');
+		const position = createPosition(12); // Position on 'prop'
+
+		const result = getTagNameAtPosition(doc, position, ENABLED_OPTIONS);
+
+		assert.strictEqual(result, 'Foo.Bar');
 	});
 });

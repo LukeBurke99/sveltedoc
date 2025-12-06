@@ -133,7 +133,10 @@ export function activate(context: vscode.ExtensionContext): void {
 					if (!document.fileName.endsWith('.svelte')) return undefined;
 					const startTime = performance.now();
 
-					const tag = getTagNameAtPosition(document, position);
+					const tag = getTagNameAtPosition(document, position, {
+						hoverWithinTag: Settings.getHoverWithinTag(),
+						maxLines: Settings.getHoverWithinTagMaxLines()
+					});
 					if (!tag) return undefined;
 
 					// Log hover attempt only if different file+tag combination
