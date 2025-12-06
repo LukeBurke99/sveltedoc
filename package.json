@@ -3,7 +3,7 @@
 	"publisher": "burke-development",
 	"displayName": "SvelteDoc",
 	"description": "Provide documentation for your Svelte components, right inside the VS Code \"hover\" tooltip.",
-	"version": "2.2.0",
+	"version": "2.3.0",
 	"icon": "images/logo/512.png",
 	"galleryBanner": {
 		"theme": "dark",
