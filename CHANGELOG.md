@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.2](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.1...v2.4.2) (2025-12-07)
+
+### 🐛 Bug Fixes
+
+* Changed default value for some settings. ([0d2228c](https://github.com/LukeBurke99/sveltedoc/commit/0d2228c6bacfe8cbedc8cf6f5bed202db0c8ab4f))
+
 ## [2.4.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.0...v2.4.1) (2025-12-06)
 
 ### 🐛 Bug Fixes
