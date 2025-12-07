@@ -165,7 +165,7 @@
 				},
 				"sveltedoc.detailedResolverLogging": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "%settings.detailedResolverLogging.description%",
 					"order": 10
 				},

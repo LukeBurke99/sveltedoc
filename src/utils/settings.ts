@@ -73,7 +73,7 @@ export class Settings {
 	 */
 	public static getDetailedResolverLogging(): boolean {
 		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
-		return config.get<boolean>('detailedResolverLogging', true);
+		return config.get<boolean>('detailedResolverLogging', false);
 	}
 
 	/**

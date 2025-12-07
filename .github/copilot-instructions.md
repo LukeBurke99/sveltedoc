@@ -2,13 +2,7 @@
 
 VS Code extension providing hover tooltips for Svelte component props via regex-based parsing (no compiler dependency).
 
-## CRITICAL: TASKS.md Synchronization
-
-**`TASKS.md` MUST be updated immediately when:**
-
-- Any task is completed (mark `[x]`)
-- New features/tasks are discussed or added
-- Scope changes occur
+## CRITICAL: Synchronization
 
 **This file (copilot-instructions.md) MUST be updated when:**
 
@@ -16,7 +10,7 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
 - Core implementation approach changes
 - New critical context is needed for AI to code effectively
 
-**Never defer updates.** TASKS.md is the single source of truth for project state; this file is the single source of truth for architecture/patterns.
+**Never defer updates.** This file is the single source of truth for architecture/patterns.
 
 ## Current Implementation Status
 
@@ -260,10 +254,9 @@ tests/            - Unit tests (at project root)
 
 ## Assistant Workflow
 
-1. Read TASKS.md before starting work
+1. Read any mentioned documentation before starting work
 2. Make focused, incremental changes
 3. Compile + check errors after each edit
-4. **Update TASKS.md before ending turn**
 
 - Fail gracefully: if import resolution fails, show fallback note.
 

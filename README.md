@@ -247,7 +247,7 @@ All settings are under the `sveltedoc` namespace:
 
 - **`showTypeInheritance`** (boolean, default: `true`) — Show the "Extends" line when component props inherit from other types or interfaces.
 
-- **`detailedResolverLogging`** (boolean, default: `true`) — Enable detailed logging for import resolution debugging. Check Output panel (View → Output → SvelteDoc).
+- **`detailedResolverLogging`** (boolean, default: `false`) — Enable detailed logging for import resolution debugging. Check Output panel (View → Output → SvelteDoc).
 
 - **`fallbackTypes`** (object, default: `{ "children": "Snippet", "class": "string" }`) — Map of property names to types used when a prop has an 'unknown' type. Useful for common props like 'children' or 'class' that are often destructured without type annotations.
 
