@@ -43,6 +43,7 @@
 	"settings.barrelFileNames.description": "List of file names (without extension) to treat as barrel files when resolving workspace packages. Use '*' to check any .ts/.js file for re-exports. ⚠️ Warning: Using '*' may impact performance.",
 	"settings.hoverWithinTag.description": "Show component properties when hovering anywhere within opening tag brackets, not just on the tag name.",
 	"settings.hoverWithinTagMaxLines.description": "Maximum lines to search backwards when detecting component tags for hover-within-tag feature. Lower values improve performance but may miss very long multi-line component tags.",
+	"settings.barrelPriority.description": "Priority order for wildcard exports (export * from) in barrel files. Paths matching earlier entries are tried first. Use folder names like 'components' or paths like 'ui/components'.",
 
 	"resolver.log.attemptingResolve": "🔍 Attempting to resolve '{0}' from {1}",
 	"resolver.log.relativePathDetected": "  ├─ Detected relative path, using standard resolution",

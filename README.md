@@ -221,6 +221,44 @@ export { Card } from './Card.svelte';
 
 > **Note:** SvelteDoc automatically resolves barrel files (re-exports) with configurable depth (default 3 levels, adjustable via `barrelFileMaxDepth` setting) and customizable barrel file names (default `["index", "main"]`, adjustable via `barrelFileNames` setting). Results are cached for performance.
 
+#### Barrel Priority
+
+When barrel files contain multiple wildcard re-exports (`export * from`), SvelteDoc tries them in order until the component is found. For large barrel files, you can optimize performance by prioritizing folders that contain your components:
+
+```json
+// settings.json
+{
+	"sveltedoc.barrelPriority": ["components", "ui", "features"]
+}
+```
+
+**How it works:**
+
+Given a barrel file like:
+```typescript
+// index.ts
+export * from './api/index.js';
+export * from './actions/index.js';
+export * from './features/index.js';
+export * from './components/index.js';  // Components are here!
+export * from './utils/index.js';
+```
+
+With `barrelPriority: ["components"]`, SvelteDoc will try `./components/index.js` **first**, before checking `./api/`, `./actions/`, etc.
+
+**Path-style priorities:**
+
+You can also specify nested paths:
+```json
+{
+	"sveltedoc.barrelPriority": ["ui/components", "components", "features"]
+}
+```
+
+This would prioritize `./ui/components/...` before `./components/...`.
+
+> **Note:** Named exports (`export { Button } from './path'`) are always tried first, regardless of priority. The priority setting only affects wildcard exports (`export * from`).
+
 ---
 
 ## Configuration
@@ -254,6 +292,8 @@ All settings are under the `sveltedoc` namespace:
 - **`barrelFileMaxDepth`** (number, default: `3`) — Maximum depth for resolving barrel files (index re-exports) in workspace packages. Range: 0-10. ⚠️ Warning: Higher values may slow down component resolution. Set to 0 to disable barrel file resolution.
 
 - **`barrelFileNames`** (array, default: `["index", "main"]`) — List of file names (without extension) to recognize as barrel files. Files matching these names will be checked for re-export patterns when resolving workspace package imports. Use `["*"]` to check any `.ts`/`.js` file for re-exports. ⚠️ Warning: Using wildcard `*` may impact performance on large projects.
+
+- **`barrelPriority`** (array, default: `["components", "features"]`) — Priority order for wildcard exports (`export * from`) in barrel files. Paths matching earlier entries are tried first, improving performance for large barrel files with many re-exports. See [Barrel Priority](#barrel-priority) for examples.
 
 - **`hoverWithinTag`** (boolean, default: `true`) — Show component properties when hovering anywhere within opening tag brackets, not just on the tag name. This allows you to see props while hovering over attributes or values.
 

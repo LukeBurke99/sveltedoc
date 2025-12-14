@@ -17,19 +17,22 @@ export class PathResolver {
 	private detailedLogging: boolean;
 	private maxBarrelDepth: number;
 	private barrelFileNames: string[];
+	private barrelPriority: string[];
 
 	public constructor(
 		cache: PathResolverCache,
 		logger: LoggingService,
 		detailedLogging: boolean = true,
 		maxBarrelDepth: number = 3,
-		barrelFileNames: string[] = ['index', 'main']
+		barrelFileNames: string[] = ['index', 'main'],
+		barrelPriority: string[] = ['components', 'features']
 	) {
 		this.cache = cache;
 		this.logger = logger;
 		this.detailedLogging = detailedLogging;
 		this.maxBarrelDepth = maxBarrelDepth;
 		this.barrelFileNames = barrelFileNames;
+		this.barrelPriority = barrelPriority;
 	}
 
 	/**
@@ -458,10 +461,47 @@ export class PathResolver {
 		const wildcardMatches: string[] = [];
 		while ((match = pattern4.exec(content)) !== null) wildcardMatches.push(match[1]);
 
-		// If we found wildcard exports, return all of them to be tried in order
-		if (wildcardMatches.length > 0) return wildcardMatches;
+		// If we found wildcard exports, sort by priority and return
+		if (wildcardMatches.length > 0) return this.sortByPriority(wildcardMatches);
 
 		return null;
+	}
+
+	/**
+	 * Sort wildcard export paths by priority configuration.
+	 * Paths matching earlier priority entries are placed first.
+	 * Non-matching paths are placed at the end in original order.
+	 * @param paths Array of relative paths from wildcard exports
+	 * @returns Sorted array of paths
+	 */
+	private sortByPriority(paths: string[]): string[] {
+		if (this.barrelPriority.length === 0) return paths;
+
+		// Separate into priority matches and non-matches
+		const priorityBuckets: string[][] = this.barrelPriority.map(() => []);
+		const nonMatches: string[] = [];
+
+		for (const p of paths) {
+			// Normalize path: remove leading ./ and get the path for matching
+			const normalizedPath = p.startsWith('./') ? p.slice(2) : p;
+
+			// Find which priority this path matches (first match wins)
+			let matched = false;
+			for (let i = 0; i < this.barrelPriority.length; i++) {
+				const priority = this.barrelPriority[i];
+				// Check if path starts with the priority folder/path
+				if (normalizedPath.startsWith(priority + '/') || normalizedPath === priority) {
+					priorityBuckets[i].push(p);
+					matched = true;
+					break;
+				}
+			}
+
+			if (!matched) nonMatches.push(p);
+		}
+
+		// Flatten buckets and append non-matches
+		return [...priorityBuckets.flat(), ...nonMatches];
 	}
 
 	/**
@@ -521,8 +561,15 @@ export class PathResolver {
 						else continue; // Path doesn't exist, try next one
 					}
 
-					// Check if resolved path exists
-					if (!fs.existsSync(resolvedPath)) continue;
+					// Check if resolved path exists, try .ts if .js doesn't exist
+					if (!fs.existsSync(resolvedPath))
+						if (resolvedPath.endsWith('.js')) {
+							const tsPath = resolvedPath.slice(0, -3) + '.ts';
+							if (fs.existsSync(tsPath)) resolvedPath = tsPath;
+							else continue;
+						} else {
+							continue;
+						}
 
 					// Check if this is another barrel file (nested barrel)
 					if (this.isBarrelFile(resolvedPath)) {
@@ -736,6 +783,14 @@ export class PathResolver {
 	 */
 	public setBarrelFileNames(names: string[]): void {
 		this.barrelFileNames = names;
+	}
+
+	/**
+	 * Update the barrel priority setting.
+	 * @param priority List of folder names/paths to prioritize when resolving wildcard exports
+	 */
+	public setBarrelPriority(priority: string[]): void {
+		this.barrelPriority = priority;
 	}
 
 	/**

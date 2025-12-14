@@ -181,4 +181,22 @@ export class Settings {
 		const value = config.get<number>('hoverWithinTagMaxLines', 50);
 		return Math.max(1, Math.min(200, value));
 	}
+
+	/**
+	 * Get priority order for wildcard exports in barrel files.
+	 * Paths matching earlier entries are tried first.
+	 * Validates that all entries are non-empty strings.
+	 */
+	public static getBarrelPriority(): string[] {
+		const config = vscode.workspace.getConfiguration(this.CONFIG_SECTION);
+		const value = config.get<string[]>('barrelPriority', ['components', 'features']);
+
+		// Validate: ensure array with non-empty string values
+		if (!Array.isArray(value)) return ['components', 'features'];
+
+		const validated = value.filter((name) => typeof name === 'string' && name.trim() !== '');
+
+		// Return default if no valid entries
+		return validated.length > 0 ? validated : ['components', 'features'];
+	}
 }

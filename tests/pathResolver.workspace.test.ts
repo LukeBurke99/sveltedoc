@@ -437,3 +437,128 @@ describe('PathResolver - Workspace with External Package Resolution', () => {
 		assert.ok(path.isAbsolute(result), 'Should be an absolute path');
 	});
 });
+
+describe('PathResolver - Deep Barrel File Resolution', () => {
+	let resolver: PathResolver;
+	let cache: PathResolverCache;
+	let fixtureRoot: string;
+	let budgetStatisticPage: string;
+
+	beforeEach(() => {
+		// Initialize services
+		cache = new PathResolverCache();
+		const mockLogger = new MockLogger() as any;
+		resolver = new PathResolver(cache, mockLogger, false); // Disable detailed logging for tests
+
+		// Set up fixture paths
+		fixtureRoot = path.join(__dirname, 'fixtures', 'pnpm-workspace-project');
+		budgetStatisticPage = path.join(
+			fixtureRoot,
+			'code',
+			'budget-app',
+			'src',
+			'lib',
+			'components',
+			'specific',
+			'BudgetStatistic.svelte'
+		);
+	});
+
+	it('1. Should resolve Statistic component through multiple barrel levels', () => {
+		// Statistic.svelte is at: code/shared/src/lib/components/widgets/Statistic.svelte
+		// Resolution path: index.ts -> components/index.ts -> widgets/Statistic.svelte
+		const result = resolver.resolve(budgetStatisticPage, '@budget-suite/shared', 'Statistic');
+
+		assert.ok(result, 'Should resolve Statistic component');
+		assert.ok(result.endsWith('Statistic.svelte'), 'Should resolve to Statistic.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'widgets', 'Statistic.svelte')),
+			'Should be in components/widgets directory'
+		);
+	});
+});
+
+describe('PathResolver - Barrel Priority Sorting', () => {
+	let resolver: PathResolver;
+	let cache: PathResolverCache;
+	let fixtureRoot: string;
+	let budgetAppPage: string;
+
+	beforeEach(() => {
+		// Initialize services with custom priority
+		cache = new PathResolverCache();
+		const mockLogger = new MockLogger() as any;
+		// Set priority to components first, then features
+		resolver = new PathResolver(
+			cache,
+			mockLogger,
+			false,
+			5,
+			['index', 'main'],
+			['components', 'features']
+		);
+
+		// Set up fixture paths
+		fixtureRoot = path.join(__dirname, 'fixtures', 'pnpm-workspace-project');
+		budgetAppPage = path.join(
+			fixtureRoot,
+			'code',
+			'budget-app',
+			'src',
+			'routes',
+			'+page.svelte'
+		);
+	});
+
+	it('1. Should prioritize components folder over other folders', () => {
+		// The huge index.ts has many export * from statements
+		// With priority set to ['components'], components paths should be tried first
+		// This test verifies that Button (in components) is found without searching actions/features first
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'Button');
+
+		assert.ok(result, 'Should resolve Button component');
+		assert.ok(result.endsWith('Button.svelte'), 'Should resolve to Button.svelte');
+		assert.ok(result.includes('components'), 'Should be in components directory');
+	});
+
+	it('2. Should still find components in non-priority folders', () => {
+		// Even with priority set, components in other folders should still be found
+		// They're just tried after the priority folders
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'Card');
+
+		assert.ok(result, 'Should resolve Card component');
+		assert.ok(result.endsWith('Card.svelte'), 'Should resolve to Card.svelte');
+	});
+
+	it('3. Should work with empty priority list (original order)', () => {
+		const resolverNoPriority = new PathResolver(
+			cache,
+			new MockLogger() as any,
+			false,
+			5,
+			['index', 'main'],
+			[] // Empty priority list
+		);
+
+		const result = resolverNoPriority.resolve(budgetAppPage, '@budget-suite/shared', 'Button');
+
+		assert.ok(result, 'Should still resolve Button without priority');
+		assert.ok(result.endsWith('Button.svelte'), 'Should resolve to Button.svelte');
+	});
+
+	it('4. Should support path-style priority like ui/components', () => {
+		const resolverWithPath = new PathResolver(
+			cache,
+			new MockLogger() as any,
+			false,
+			5,
+			['index', 'main'],
+			['ui/components', 'components'] // Path-style priority
+		);
+
+		const result = resolverWithPath.resolve(budgetAppPage, '@budget-suite/shared', 'Button');
+
+		assert.ok(result, 'Should resolve with path-style priority');
+		assert.ok(result.endsWith('Button.svelte'), 'Should resolve to Button.svelte');
+	});
+});

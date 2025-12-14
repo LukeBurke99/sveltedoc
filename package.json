@@ -211,6 +211,18 @@
 					"maximum": 200,
 					"description": "%settings.hoverWithinTagMaxLines.description%",
 					"order": 15
+				},
+				"sveltedoc.barrelPriority": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"components",
+						"features"
+					],
+					"description": "%settings.barrelPriority.description%",
+					"order": 16
 				}
 			}
 		}

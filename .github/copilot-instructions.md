@@ -49,6 +49,10 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
     - Conditional exports support: priority order "svelte" → "default" → first available
     - Barrel file resolution up to configurable depth (default 3 levels) with timing measurements
     - Export patterns: `export { default as X }`, `export { X }`, `export * from`
+    - **Barrel Priority**: Configurable folder priority for wildcard exports (default: components, features)
+        - Paths matching earlier priority entries are tried first
+        - Supports folder names (`components`) and path-style (`ui/components`)
+        - Non-matching paths tried after priority paths in original order
     - Two-level caching: workspace package map + individual package resolutions
     - File watcher for pnpm-workspace.yaml with automatic cache invalidation
     - Component name flow: extension.ts passes tagName to resolver for barrel lookup
@@ -57,6 +61,7 @@ VS Code extension providing hover tooltips for Svelte component props via regex-
     - Normalization: normaliseComment, normaliseType, normaliseDefaultValue
     - Tooltip: tooltipOrder, tooltipFormat, showPropertyComments, showPropertyTypes, showDefaultValues, showTypeInheritance
     - Hover behavior: hoverWithinTag (show props when hovering anywhere in tag), hoverWithinTagMaxLines
+    - Barrel: barrelFileMaxDepth, barrelFileNames, barrelPriority
     - Cache: cacheExpirationMinutes
 - Commands:
     - Clear Cache: clears all cached component prop data

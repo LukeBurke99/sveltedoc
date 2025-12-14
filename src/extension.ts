@@ -28,7 +28,8 @@ export function activate(context: vscode.ExtensionContext): void {
 		logger,
 		Settings.getDetailedResolverLogging(),
 		Settings.getBarrelFileMaxDepth(),
-		Settings.getBarrelFileNames()
+		Settings.getBarrelFileNames(),
+		Settings.getBarrelPriority()
 	);
 
 	//#region Simple Event Listeners
@@ -46,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): void {
 			pathResolver.setDetailedLogging(Settings.getDetailedResolverLogging());
 			pathResolver.setMaxBarrelDepth(Settings.getBarrelFileMaxDepth());
 			pathResolver.setBarrelFileNames(Settings.getBarrelFileNames());
+			pathResolver.setBarrelPriority(Settings.getBarrelPriority());
 			logger.logSettingsChanged();
 		}
 	});
