@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.2...v2.5.0) (2025-12-14)
+
+### ✨ Features
+
+* add barrel priority configuration and update related documentation ([dcf014b](https://github.com/LukeBurke99/sveltedoc/commit/dcf014be5deeb242bb0d7fe99a9826fbeb337865))
+
 ## [2.4.2](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.1...v2.4.2) (2025-12-07)
 
 ### 🐛 Bug Fixes
