@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.2](https://github.com/LukeBurke99/sveltedoc/compare/v2.5.1...v2.5.2) (2025-12-16)
+
+### 🐛 Bug Fixes
+
+* Add 'required' comment, to make it clearer,  when a property is not optional. ([#6](https://github.com/LukeBurke99/sveltedoc/issues/6)). ([98f1a66](https://github.com/LukeBurke99/sveltedoc/commit/98f1a66fc49ed1fe7816c12f5d08715f543bc176))
+
 ## [2.5.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.5.0...v2.5.1) (2025-12-16)
 
 ### 🐛 Bug Fixes
