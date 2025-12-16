@@ -1,6 +1,40 @@
 export { default as Button } from './Button.svelte';
 export { default as Card } from './Card.svelte';
 
+// Test Case 1: Simple multi-export (component + type)
+export { default as Accordion, type AccordionContext } from './Accordion.svelte';
+
+// Test Case 2: Multiple mixed exports (component + types + functions)
+export { default as AccordionMixed, type AccordionContext as AccordionCtx, type SomeOtherType, someFunction } from './Accordion.svelte';
+
+// Test Case 3: Non-standard order (type first, then component)
+export { type AccordionContext as Ctx, default as AccordionReordered, andAnotherFunction } from './Accordion.svelte';
+
+// Test Case 4: Multi-line export with mixed content
+export {
+	type AccordionContext as MultiLineCtx,
+	default as AccordionMultiLine,
+	type SomeOtherType as OtherType,
+	andAnotherFunction as anotherFn
+} from './Accordion.svelte';
+
+// Test Case 5: Named export (no default) - single export
+export { Input } from './Input.svelte';
+
+// Test Case 6: Named export (default as named) with multiple items
+export { default as Dialog, type ModalContext } from './Dialog.svelte';
+
+// Test Case 7: Named export with mixed order
+export { type ModalContext as ModalCtx, default as DialogReordered, show as showDialog } from './Dialog.svelte';
+
+// Test Case 8: Multi-line named export
+export {
+	default as DialogMultiLine,
+	type ModalContext as MultiLineModalCtx,
+	hide as hideDialog
+} from './Dialog.svelte';
+
+
 
 export * from './accordion/index.js';
 export * from './alerts/index.js';

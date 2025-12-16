@@ -439,18 +439,25 @@ export class PathResolver {
 	 * @returns Relative path to component, or array of wildcard paths to try, or null if not found
 	 */
 	private parseBarrelExports(content: string, componentName: string): string | string[] | null {
-		// Pattern 1: export { default as ComponentName } from './path'
+		// Pattern 1: export { default as ComponentName, ... } from './path'
+		// Handles: export { default as X } from './X'
+		//          export { default as X, type Y, ... } from './X'
+		//          export { type Y, default as X, ... } from './X'
+		// Uses [^}]* to match any content before/after the target export
 		const pattern1 = new RegExp(
-			`export\\s+\\{\\s*default\\s+as\\s+${componentName}\\s*\\}\\s+from\\s+['"]([^'"]+)['"]`,
-			'g'
+			`export\\s+\\{[^}]*\\bdefault\\s+as\\s+${componentName}\\b[^}]*\\}\\s+from\\s+['"]([^'"]+)['"]`,
+			'gs' // 'g' for global, 's' for dotAll (allows . to match newlines)
 		);
 		let match = pattern1.exec(content);
 		if (match) return match[1];
 
-		// Pattern 2: export { ComponentName } from './path'
+		// Pattern 2: export { ComponentName, ... } from './path'
+		// Handles: export { X } from './X'
+		//          export { X, type Y, ... } from './X'
+		//          export { type Y, X, ... } from './X'
 		const pattern2 = new RegExp(
-			`export\\s+\\{\\s*${componentName}\\s*\\}\\s+from\\s+['"]([^'"]+)['"]`,
-			'g'
+			`export\\s+\\{[^}]*\\b${componentName}\\b[^}]*\\}\\s+from\\s+['"]([^'"]+)['"]`,
+			'gs'
 		);
 		match = pattern2.exec(content);
 		if (match) return match[1];

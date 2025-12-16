@@ -194,6 +194,122 @@ describe('PathResolver - Workspace Package Resolution', () => {
 			'Should be in components directory'
 		);
 	});
+
+	it('15. Should resolve component when exported with multiple items (component + type)', () => {
+		// Tests pattern: export { default as Accordion, type AccordionContext } from './Accordion.svelte';
+		// This pattern exports both a component and a type from the same file
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'Accordion');
+
+		assert.ok(result, 'Should resolve Accordion component from multi-export pattern');
+		assert.ok(result.endsWith('Accordion.svelte'), 'Should resolve to Accordion.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Accordion.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('16. Should resolve component with multiple mixed exports (component + types + functions)', () => {
+		// Tests pattern: export { default as X, type Y, type Z, someFunction } from './X.svelte';
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'AccordionMixed');
+
+		assert.ok(result, 'Should resolve component from mixed multi-export pattern');
+		assert.ok(result.endsWith('Accordion.svelte'), 'Should resolve to Accordion.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Accordion.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('17. Should resolve component with non-standard export order (type first)', () => {
+		// Tests pattern: export { type X, default as Component, someFunction } from './Component.svelte';
+		// Component is NOT first in the export list
+		const result = resolver.resolve(
+			budgetAppPage,
+			'@budget-suite/shared',
+			'AccordionReordered'
+		);
+
+		assert.ok(result, 'Should resolve component when not first in export list');
+		assert.ok(result.endsWith('Accordion.svelte'), 'Should resolve to Accordion.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Accordion.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('18. Should resolve component from multi-line export statement', () => {
+		// Tests pattern with newlines:
+		// export {
+		//     type X,
+		//     default as Component,
+		//     type Y
+		// } from './Component.svelte';
+		const result = resolver.resolve(
+			budgetAppPage,
+			'@budget-suite/shared',
+			'AccordionMultiLine'
+		);
+
+		assert.ok(result, 'Should resolve component from multi-line export');
+		assert.ok(result.endsWith('Accordion.svelte'), 'Should resolve to Accordion.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Accordion.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('19. Should resolve named export (no default) from single export', () => {
+		// Tests pattern: export { Input } from './Input.svelte';
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'Input');
+
+		assert.ok(result, 'Should resolve named export without default');
+		assert.ok(result.endsWith('Input.svelte'), 'Should resolve to Input.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Input.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('20. Should resolve named export with multiple items', () => {
+		// Tests pattern: export { default as Dialog, type ModalContext } from './Dialog.svelte';
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'Dialog');
+
+		assert.ok(result, 'Should resolve named export with multiple items');
+		assert.ok(result.endsWith('Dialog.svelte'), 'Should resolve to Dialog.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Dialog.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('21. Should resolve named export with alias in mixed order', () => {
+		// Tests pattern: export { type X, default as DialogReordered, show as showDialog } from './Dialog.svelte';
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'DialogReordered');
+
+		assert.ok(result, 'Should resolve named export with alias');
+		assert.ok(result.endsWith('Dialog.svelte'), 'Should resolve to Dialog.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Dialog.svelte')),
+			'Should be in components directory'
+		);
+	});
+
+	it('22. Should resolve named export from multi-line statement', () => {
+		// Tests pattern:
+		// export {
+		//     default as DialogMultiLine,
+		//     type ModalContext,
+		//     hide as hideDialog
+		// } from './Dialog.svelte';
+		const result = resolver.resolve(budgetAppPage, '@budget-suite/shared', 'DialogMultiLine');
+
+		assert.ok(result, 'Should resolve named export from multi-line');
+		assert.ok(result.endsWith('Dialog.svelte'), 'Should resolve to Dialog.svelte');
+		assert.ok(
+			result.includes(path.join('components', 'Dialog.svelte')),
+			'Should be in components directory'
+		);
+	});
 });
 
 describe('PathResolver - Workspace GLOB Package Resolution', () => {
