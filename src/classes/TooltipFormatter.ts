@@ -155,7 +155,10 @@ export class TooltipFormatter {
 
 		let details = '```typescript\n';
 		for (const prop of sortedProps) {
-			if (settings.showComments && prop.comment) details += `/** ${prop.comment} */\n`;
+			if (settings.showComments && prop.comment)
+				details += `/** ${prop.required ? `⚠️ ${t('tooltip.general.required')}:` : ''} ${prop.comment} */\n`;
+			else if (settings.showComments && !prop.comment && prop.required)
+				details += `/** ⚠️ ${t('tooltip.general.required')} */\n`;
 
 			details += `let ${prop.name}`;
 
@@ -166,8 +169,11 @@ export class TooltipFormatter {
 			if (settings.showDefaults && prop.defaultValue)
 				details += TooltipFormatter.showBindable(prop.defaultValue, prop.bindable);
 
-			// When types are hidden, add '// required' comment if prop is required
-			details += !settings.showTypes && prop.required ? '; // required' : ';';
+			// When types and comments are hidden, add '// required' comment if prop is required
+			details +=
+				!settings.showTypes && prop.required && !settings.showComments
+					? '; // required'
+					: ';';
 			details += '\n';
 		}
 		details += '```\n';

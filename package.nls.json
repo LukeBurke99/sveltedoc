@@ -16,6 +16,7 @@
 	"tooltip.example.propsDestructuring": "```typescript\n// Add typed `$props()` destructuring to define component props:\nconst { prop1, prop2 }: Props = $props();\n```",
 	"tooltip.general.cache": "Cache",
 	"tooltip.general.fresh": "Fresh",
+	"tooltip.general.required": "Required",
 
 	"command.clearCache.title": "Clear Cache",
 	"command.showOutput.title": "Show Output",
