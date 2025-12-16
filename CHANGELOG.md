@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.1](https://github.com/LukeBurke99/sveltedoc/compare/v2.5.0...v2.5.1) (2025-12-16)
+
+### 🐛 Bug Fixes
+
+* Fix for exporting multiple items from a single file, e.g. default component and type. ([#8](https://github.com/LukeBurke99/sveltedoc/issues/8)) ([5b5cf75](https://github.com/LukeBurke99/sveltedoc/commit/5b5cf75fc0d309e49ab6a606711e90ca28f78f40))
+
 ## [2.5.0](https://github.com/LukeBurke99/sveltedoc/compare/v2.4.2...v2.5.0) (2025-12-14)
 
 ### ✨ Features
